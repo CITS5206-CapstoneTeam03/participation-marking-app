@@ -4,8 +4,7 @@ A simple, user-friendly app for tutors to quickly and easily mark student partic
 
 ## Project Structure
 
-- `frontend/`: Next.js frontend application (App Router)
-- `api/`: FastAPI backend application
+- `/`: Next.js frontend application (App Router)
 - `.github/workflows/`: GitHub Actions workflows
 
 ## Getting Started
@@ -13,15 +12,6 @@ A simple, user-friendly app for tutors to quickly and easily mark student partic
 ### Frontend
 
 ```bash
-cd frontend
 npm install
 npm run dev
-```
-
-### Backend
-
-```bash
-cd api
-pip install -r requirements.txt
-uvicorn main:app --reload
 ```
