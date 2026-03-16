@@ -15,3 +15,13 @@ export async function testApi(): Promise<TestApiResponse> {
   return fetchJson<TestApiResponse>("/api/test");
 }
 
+export type DbTestResponse = {
+  ok: boolean;
+  connected: boolean;
+  firstRecord: { id: number; name: string | null; email: string | null } | null;
+};
+
+export async function testDb(): Promise<DbTestResponse> {
+  return fetchJson<DbTestResponse>("/api/db-test");
+}
+

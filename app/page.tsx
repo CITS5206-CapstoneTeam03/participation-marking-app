@@ -2,12 +2,16 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { testApi } from "./lib/api";
+import { testApi, testDb } from "./lib/api";
 
 export default function Home() {
   const [apiResult, setApiResult] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const [dbResult, setDbResult] = useState<string | null>(null);
+  const [dbError, setDbError] = useState<string | null>(null);
+  const [isDbLoading, setIsDbLoading] = useState(false);
 
   const handleTestApi = async () => {
     setIsLoading(true);
@@ -21,6 +25,21 @@ export default function Home() {
       setApiError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleTestDb = async () => {
+    setIsDbLoading(true);
+    setDbError(null);
+    setDbResult(null);
+
+    try {
+      const data = await testDb();
+      setDbResult(JSON.stringify(data, null, 2));
+    } catch (err: unknown) {
+      setDbError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setIsDbLoading(false);
     }
   };
 
@@ -88,7 +107,15 @@ export default function Home() {
           >
             {isLoading ? "Testing..." : "Test API"}
           </button>
+          <button
+            type="button"
+            onClick={handleTestDb}
+            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-sky-500 px-5 text-sky-700 transition-colors hover:bg-sky-500 hover:text-white dark:border-sky-400 dark:text-sky-300 dark:hover:bg-sky-400 dark:hover:text-black md:w-[158px]"
+          >
+            {isDbLoading ? "Testing..." : "Test DB"}
+          </button>
         </div>
+        
         {(apiResult || apiError) && (
           <div className="mt-6 w-full rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-4 text-sm text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
             <p className="mb-1 font-semibold">API response</p>
@@ -96,6 +123,18 @@ export default function Home() {
             {apiError && (
               <p className="mt-1 text-xs text-red-600 dark:text-red-400">
                 Error: {apiError}
+              </p>
+            )}
+          </div>
+        )}
+
+        {(dbResult || dbError) && (
+          <div className="mt-4 w-full rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-4 text-sm text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+            <p className="mb-1 font-semibold">DB response</p>
+            {dbResult && <pre className="whitespace-pre-wrap break-words text-xs">{dbResult}</pre>}
+            {dbError && (
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                Error: {dbError}
               </p>
             )}
           </div>
