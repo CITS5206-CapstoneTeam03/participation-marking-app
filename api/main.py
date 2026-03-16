@@ -4,7 +4,7 @@ app = FastAPI()
 
 @app.get("/")
 def home():
-    return {"message": "Backend Partimark đã sẵn sàng phục vụ UWA!"}
+    return {"message": "Backend Partimark is ready!"}
 
 @app.get("/test")
 def test():

@@ -1,6 +1,31 @@
+"use client";
+
 import Image from "next/image";
+import { useState } from "react";
 
 export default function Home() {
+  const [apiResult, setApiResult] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleTestApi = async () => {
+    setIsLoading(true);
+    setApiError(null);
+    setApiResult(null);
+    try {
+      const res = await fetch("/api/test");
+      if (!res.ok) {
+        throw new Error(`Request failed with status ${res.status}`);
+      }
+      const data = await res.json();
+      setApiResult(JSON.stringify(data));
+    } catch (err: any) {
+      setApiError(err.message ?? "Unknown error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
       <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
@@ -58,7 +83,25 @@ export default function Home() {
           >
             Documentation
           </a>
+          <button
+            type="button"
+            onClick={handleTestApi}
+            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-emerald-500 px-5 text-emerald-700 transition-colors hover:bg-emerald-500 hover:text-white dark:border-emerald-400 dark:text-emerald-300 dark:hover:bg-emerald-400 dark:hover:text-black md:w-[158px]"
+          >
+            {isLoading ? "Testing..." : "Test Python API"}
+          </button>
         </div>
+        {(apiResult || apiError) && (
+          <div className="mt-6 w-full rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-4 text-sm text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+            <p className="mb-1 font-semibold">API response</p>
+            {apiResult && <pre className="whitespace-pre-wrap break-words text-xs">{apiResult}</pre>}
+            {apiError && (
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                Error: {apiError}
+              </p>
+            )}
+          </div>
+        )}
       </main>
     </div>
   );
