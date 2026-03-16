@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { testApi } from "./lib/api";
 
 export default function Home() {
   const [apiResult, setApiResult] = useState<string | null>(null);
@@ -12,15 +13,12 @@ export default function Home() {
     setIsLoading(true);
     setApiError(null);
     setApiResult(null);
+    
     try {
-      const res = await fetch("/api/test");
-      if (!res.ok) {
-        throw new Error(`Request failed with status ${res.status}`);
-      }
-      const data = await res.json();
+      const data = await testApi();
       setApiResult(JSON.stringify(data));
-    } catch (err: any) {
-      setApiError(err.message ?? "Unknown error");
+    } catch (err: unknown) {
+      setApiError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setIsLoading(false);
     }
