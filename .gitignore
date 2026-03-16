@@ -2,6 +2,9 @@
 node_modules/
 .next/
 
+# API
+api/__pycache__/*
+
 # Virtual Environment
 venv/
 env/
