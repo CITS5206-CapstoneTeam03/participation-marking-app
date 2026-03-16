@@ -1,7 +1,7 @@
 from fastapi import Depends, FastAPI, APIRouter, HTTPException
 from sqlalchemy.orm import Session
 
-from .db import User, get_db
+from db import User, get_db
 
 app = FastAPI()
 router = APIRouter(prefix="/api")
@@ -13,7 +13,6 @@ def home():
 @router.get("/test")
 def test():
     return {"status": "Online", "version": "1.0.0"}
-
 
 @router.get("/db-test")
 def db_test(db: Session = Depends(get_db)):
