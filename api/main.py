@@ -1,11 +1,14 @@
-from fastapi import FastAPI
+from fastapi import FastAPI APIRouter
 
 app = FastAPI()
+router = APIRouter(prefix="/api")
 
-@app.get("/")
+@router.get("/")
 def home():
     return {"message": "Backend Partimark is ready!"}
 
-@app.get("/test")
+@router.get("/test")
 def test():
     return {"status": "Online", "version": "1.0.0"}
+
+app.include_router(router)

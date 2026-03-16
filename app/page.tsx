@@ -88,7 +88,7 @@ export default function Home() {
             onClick={handleTestApi}
             className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-emerald-500 px-5 text-emerald-700 transition-colors hover:bg-emerald-500 hover:text-white dark:border-emerald-400 dark:text-emerald-300 dark:hover:bg-emerald-400 dark:hover:text-black md:w-[158px]"
           >
-            {isLoading ? "Testing..." : "Test Python API"}
+            {isLoading ? "Testing..." : "Test API"}
           </button>
         </div>
         {(apiResult || apiError) && (
