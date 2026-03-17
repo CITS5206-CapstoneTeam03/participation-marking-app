@@ -23,9 +23,10 @@ npm run dev
 By default, the Makefile uses `PYTHON=python3`. Depending on your machine, the Python command can be either `python` or `python3`.
 ```bash
 make backend-setup          # Create venv (.venv) and install api/requirements.txt
-
 # If your machine uses `python` instead of `python3`:
 # make backend-setup PYTHON=python
+
+make backend-run
 ```
 
 #### 🪟 Windows
@@ -48,3 +49,6 @@ SWA CLI will create a local address (for example `http://localhost:4280`) where:
 
 ## Localhost
 ### http://localhost:4280
+
+## FastAPI Swagger
+### http://localhost:8000/docs
