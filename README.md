@@ -18,6 +18,10 @@ npm run dev
 
 ### Backend
 
+#### Environment variables (`api/.env`)
+Create `api/.env` by copying `api/.env.example`, then paste your database info (from `documents/Teams`) into the variables:
+Note: `.env` files are ignored by git (won’t be committed).
+
 #### 🐧 macOS / Linux
 - **Set up backend with Makefile**
 By default, the Makefile uses `PYTHON=python3`. Depending on your machine, the Python command can be either `python` or `python3`.
