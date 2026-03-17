@@ -9,6 +9,6 @@ backend-setup:
 	$(VENV_DIR)/bin/pip install -r $(BACKEND_DIR)/requirements.txt
 
 backend-run:
-	$(VENV_DIR)/bin/uvicorn api.main:app --reload --port 8000
+	PYTHONPATH=$(BACKEND_DIR) $(VENV_DIR)/bin/uvicorn api.main:app --reload --port 8000
 
 backend: backend-setup backend-run

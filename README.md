@@ -34,7 +34,8 @@ make backend-run
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r api/requirements.txt
-.\.venv\Scripts\python.exe -m uvicorn api.main:app --reload --port 8000
+$env:PYTHONPATH = "api"
+uvicorn main:app --reload --port 8000
 ```
 
 ### Linking Frontend and Backend using SWA CLI
