@@ -38,6 +38,24 @@ Keeping frontend and backend together **version-aligns** API contracts and UI ch
 
 ---
 
+## Environments
+
+We maintain **two environments**: **production** (hosted on Azure, public tutors) and **localhost** (developer machines). Database usage is split so local work does **not** require a MySQL instance on the laptop.
+
+| | **Production** | **Localhost** |
+|---|----------------|---------------|
+| **Purpose** | Live app for real use | UI + API development |
+| **Frontend** | Azure Static Web Apps, served at custom domain **[https://partimark.app](https://partimark.app)** | Next.js dev server (often fronted by SWA CLI for same-origin `/api`) at **localhost:4280** |
+| **Backend** | Azure App Service Web App **`partimark`** | FastAPI via Uvicorn (e.g. port 8000) |
+| **Database** | Production MySQL database name from App Service settings (`DB_NAME` in Azure / env) | **`partimark-staging`** on **Azure Database for MySQL** (still in the cloud—no local DB server) |
+| **What you run** | Nothing locally; Azure runs the stack | **Next.js + Python only**; connect to staging DB over the network with credentials in `api/.env` |
+
+**Why staging lives on Azure for local dev:** Developers get realistic TLS, firewall, and server behaviour without installing or syncing MySQL locally. The app selects the staging database when the API is started in typical dev mode: `api/db.py` sets `DB_NAME` to **`partimark-staging`** whenever **`--reload`** appears on the Uvicorn command line, so hot reload keeps pointing at staging unless you override `DB_NAME` explicitly.
+
+**Safety note:** Local API calls with `--reload` therefore **only affect `partimark-staging`** (not production data), as long as production credentials and `DB_NAME` are not used in local `.env` for reload dev.
+
+---
+
 ## Frontend — Next.js (React) on Azure Static Web Apps
 
 ### Why this stack
@@ -52,7 +70,7 @@ Keeping frontend and backend together **version-aligns** API contracts and UI ch
 - Next.js **16.x**, React **19.x**, TypeScript, ESLint (`eslint-config-next`).
 - **Client-side** API helpers under `app/lib/api.ts` that call **relative** URLs such as `/api/test` and `/api/db-test`, which is the pattern that works when the host (locally: SWA CLI proxy; in Azure: integrated routing) presents API and UI under one origin.
 - A starter home page with buttons that exercise the backend and DB test endpoints.
-- **Azure SWA workflow** (`.github/workflows/azure-static-web-apps-green-dune-015955600.yml`): builds the app and uploads the **`out`** artifact; `api_location` is left empty because the Python API is **not** hosted as an SWA Functions app—it is deployed separately to App Service (see below).
+- **Azure SWA workflow** (`.github/workflows/azure-static-web-apps-green-dune-015955600.yml`): the **`build_and_deploy_job`** runs on **every push to `main`** (and can still be run manually via **`workflow_dispatch`**). It builds the app and uploads the **`out`** artifact; `api_location` is left empty because the Python API is **not** hosted as an SWA Functions app—it is deployed separately to App Service (see below). The deployed site is exposed at **https://partimark.app** (custom domain on the Static Web App).
 
 ### Why Azure Static Web Apps (not only “any static host”)
 
@@ -106,12 +124,12 @@ The API is **stateful in the sense of talking to MySQL** and benefits from a **l
 
 ## Deployment and GitHub Actions
 
-Both primary workflows are triggered **manually** via **`workflow_dispatch`** (automatic push triggers are commented out). That gives **controlled releases**: you deploy when ready rather than on every commit to `main`.
+| Workflow | When it runs | Purpose |
+|----------|----------------|---------|
+| `azure-static-web-apps-green-dune-015955600.yml` | **Push to `main`** and optional **`workflow_dispatch`** | **`build_and_deploy_job`**: build static Next.js output and deploy to **Azure Static Web Apps** (production front end, **partimark.app**) |
+| `main_partimark.yml` | **`workflow_dispatch`** (manual) | Package `api/` and deploy to **Azure Web App `partimark`** (production API) |
 
-| Workflow | Purpose |
-|----------|---------|
-| `azure-static-web-apps-green-dune-015955600.yml` | Build static Next.js output and deploy to **Azure Static Web Apps** |
-| `main_partimark.yml` | Package `api/` and deploy to **Azure Web App `partimark`** |
+The **frontend** pipeline is tied to **`main`** so merges to the default branch continuously ship the static site. The **backend** workflow remains **manual** so API deploys can be deliberate and coordinated with database or config changes when needed.
 
 Secrets (SWA deployment token, Azure login for App Service) live in **GitHub repository secrets**; they are referenced by the workflows but not stored in the repo.
 
