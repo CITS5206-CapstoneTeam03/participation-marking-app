@@ -1,6 +1,7 @@
 # Frontend
 node_modules/
 .next/
+out/
 
 # API
 api/__pycache__/*
