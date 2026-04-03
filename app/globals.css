@@ -67,7 +67,7 @@ button {
   border-bottom: 1px solid var(--panel-border);
   display: flex;
   gap: 14px;
-  padding: 20px 16px;
+  padding: 22px 18px;
 }
 
 .prototype-nav {
@@ -95,14 +95,15 @@ button {
 
 .prototype-main {
   min-width: 0;
-  padding: 32px 34px 40px;
+  padding: 36px 46px 40px;
 }
 
 .prototype-header h1 {
-  font-size: 44px;
+  font-size: 46px;
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1.05;
+  margin: 0;
 }
 
 .prototype-header p {
@@ -153,15 +154,16 @@ button {
 }
 
 .workshop-picker-card {
-  max-width: 716px;
-  min-height: 200px;
-  padding: 34px;
+  max-width: 720px;
+  min-height: 204px;
+  padding: 36px 34px;
 }
 
-.workshop-picker-card h2 {
+.section-card-title {
+  color: #151c2b;
   font-size: 24px;
   font-weight: 700;
-  margin: 0 0 22px;
+  margin: 0 0 20px;
 }
 
 .workshop-option {
@@ -170,7 +172,9 @@ button {
   border-radius: 14px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  max-width: 100%;
+  min-height: 86px;
   padding: 18px 20px;
 }
 
@@ -178,11 +182,13 @@ button {
   color: #161d2b;
   font-size: 18px;
   font-weight: 600;
+  line-height: 1.2;
 }
 
 .workshop-option-subtitle {
   color: var(--text-muted);
   font-size: 16px;
+  line-height: 1.25;
 }
 
 @media (max-width: 1100px) {

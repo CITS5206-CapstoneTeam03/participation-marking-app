@@ -66,7 +66,7 @@ export default function Home() {
 
         <section className="real-page-panel">
           <article className="prototype-card workshop-picker-card">
-            <h2>Select Workshop</h2>
+            <h2 className="section-card-title">Select Workshop</h2>
             <Link href="/" className="workshop-option">
               <span className="workshop-option-title">Workshop 01</span>
               <span className="workshop-option-subtitle">35 students</span>
