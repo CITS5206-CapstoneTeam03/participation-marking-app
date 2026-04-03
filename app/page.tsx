@@ -1,145 +1,125 @@
-"use client";
+import Link from "next/link";
+import { AppShell } from "./components/app-shell";
+import { dashboardMetrics, participationWeeks } from "./data/mock-data";
 
-import Image from "next/image";
-import { useState } from "react";
-import { testApi, testDb } from "./lib/api";
+const toneClasses = {
+  navy: "bg-[rgba(20,33,61,0.09)] text-[var(--navy)]",
+  gold: "bg-[rgba(252,163,17,0.16)] text-[var(--navy)]",
+  mint: "bg-[rgba(42,157,143,0.14)] text-[var(--mint)]",
+};
 
 export default function Home() {
-  const [apiResult, setApiResult] = useState<string | null>(null);
-  const [apiError, setApiError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const [dbResult, setDbResult] = useState<string | null>(null);
-  const [dbError, setDbError] = useState<string | null>(null);
-  const [isDbLoading, setIsDbLoading] = useState(false);
-
-  const handleTestApi = async () => {
-    setIsLoading(true);
-    setApiError(null);
-    setApiResult(null);
-    
-    try {
-      const data = await testApi();
-      setApiResult(JSON.stringify(data));
-    } catch (err: unknown) {
-      setApiError(err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleTestDb = async () => {
-    setIsDbLoading(true);
-    setDbError(null);
-    setDbResult(null);
-
-    try {
-      const data = await testDb();
-      setDbResult(JSON.stringify(data, null, 2));
-    } catch (err: unknown) {
-      setDbError(err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      setIsDbLoading(false);
-    }
-  };
+  const nextWeek = participationWeeks.find((week) => week.status !== "locked") ?? participationWeeks[0];
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-          <button
-            type="button"
-            onClick={handleTestApi}
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-emerald-500 px-5 text-emerald-700 transition-colors hover:bg-emerald-500 hover:text-white dark:border-emerald-400 dark:text-emerald-300 dark:hover:bg-emerald-400 dark:hover:text-black md:w-[158px]"
-          >
-            {isLoading ? "Testing..." : "Test API"}
-          </button>
-          <button
-            type="button"
-            onClick={handleTestDb}
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-sky-500 px-5 text-sky-700 transition-colors hover:bg-sky-500 hover:text-white dark:border-sky-400 dark:text-sky-300 dark:hover:bg-sky-400 dark:hover:text-black md:w-[158px]"
-          >
-            {isDbLoading ? "Testing..." : "Test DB"}
-          </button>
-        </div>
-        
-        {(apiResult || apiError) && (
-          <div className="mt-6 w-full rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-4 text-sm text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
-            <p className="mb-1 font-semibold">API response</p>
-            {apiResult && <pre className="whitespace-pre-wrap break-words text-xs">{apiResult}</pre>}
-            {apiError && (
-              <p className="mt-1 text-xs text-red-600 dark:text-red-400">
-                Error: {apiError}
-              </p>
-            )}
-          </div>
-        )}
+    <AppShell
+      title="Dashboard"
+      description="A tutor-facing overview of marking progress, available weeks, and quick entry points into the touch-friendly participation flow."
+      action={
+        <Link
+          href={`/marking/${nextWeek.id}`}
+          className="inline-flex items-center rounded-full bg-[var(--navy)] px-5 py-3 text-sm font-semibold text-white hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(20,33,61,0.18)]"
+        >
+          Continue marking {nextWeek.label}
+        </Link>
+      }
+    >
+      <section className="grid gap-4 md:grid-cols-3">
+        {dashboardMetrics.map((metric) => (
+          <article key={metric.label} className="panel p-5 lg:p-6">
+            <div className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${toneClasses[metric.tone]}`}>
+              {metric.label}
+            </div>
+            <p className="mt-5 text-4xl font-semibold tracking-tight text-[var(--navy)]">{metric.value}</p>
+            <p className="mt-3 text-sm leading-6 text-[var(--ink-soft)]">{metric.helper}</p>
+          </article>
+        ))}
+      </section>
 
-        {(dbResult || dbError) && (
-          <div className="mt-4 w-full rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-4 text-sm text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
-            <p className="mb-1 font-semibold">DB response</p>
-            {dbResult && <pre className="whitespace-pre-wrap break-words text-xs">{dbResult}</pre>}
-            {dbError && (
-              <p className="mt-1 text-xs text-red-600 dark:text-red-400">
-                Error: {dbError}
-              </p>
-            )}
+      <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+        <article className="panel p-5 lg:p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="eyebrow">Weekly Participation Marks</p>
+              <h3 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--navy)]">
+                Active participation weeks
+              </h3>
+            </div>
+            <Link
+              href="/config"
+              className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--navy)] hover:-translate-y-0.5"
+            >
+              Open unit config
+            </Link>
           </div>
-        )}
-      </main>
-    </div>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            {participationWeeks.map((week) => (
+              <Link
+                key={week.id}
+                href={`/marking/${week.id}`}
+                className="rounded-[24px] border border-[var(--line)] bg-white/80 p-5 hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(20,33,61,0.08)]"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="eyebrow">{week.workshop}</p>
+                    <h4 className="mt-2 text-xl font-semibold text-[var(--navy)]">{week.label}</h4>
+                  </div>
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                      week.status === "locked"
+                        ? "bg-[rgba(20,33,61,0.1)] text-[var(--navy)]"
+                        : week.status === "in-progress"
+                          ? "bg-[rgba(252,163,17,0.16)] text-[var(--navy)]"
+                          : "bg-[rgba(42,157,143,0.14)] text-[var(--mint)]"
+                    }`}
+                  >
+                    {week.status}
+                  </span>
+                </div>
+
+                <p className="mt-3 text-sm leading-6 text-[var(--ink-soft)]">{week.date}</p>
+                <div className="mt-4 h-2 rounded-full bg-[rgba(20,33,61,0.08)]">
+                  <div
+                    className="h-full rounded-full bg-[linear-gradient(90deg,var(--gold),var(--mint))]"
+                    style={{ width: `${week.completion}%` }}
+                  />
+                </div>
+                <p className="mt-3 text-sm font-medium text-[var(--navy)]">{week.submissions}</p>
+              </Link>
+            ))}
+          </div>
+        </article>
+
+        <article className="panel p-5 lg:p-6">
+          <p className="eyebrow">Workflow Notes</p>
+          <h3 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--navy)]">
+            Shared frontend delivery plan
+          </h3>
+
+          <ol className="mt-6 space-y-4 text-sm leading-6 text-[var(--ink-soft)]">
+            <li className="rounded-2xl bg-white/80 p-4">
+              1. Build the week selection route and lock-state indicators for tutors.
+            </li>
+            <li className="rounded-2xl bg-white/80 p-4">
+              2. Implement the 0-3 marking cards with large tap targets for workshop use.
+            </li>
+            <li className="rounded-2xl bg-white/80 p-4">
+              3. Add the unit configuration dashboard for enabled weeks and score weighting.
+            </li>
+            <li className="rounded-2xl bg-white/80 p-4">
+              4. Swap mock data for API-backed state after backend contracts stabilise.
+            </li>
+          </ol>
+
+          <Link
+            href="/marking"
+            className="mt-6 inline-flex items-center rounded-full bg-[var(--gold)] px-5 py-3 text-sm font-semibold text-[var(--navy)] hover:-translate-y-0.5"
+          >
+            Review week selection flow
+          </Link>
+        </article>
+      </section>
+    </AppShell>
   );
 }
