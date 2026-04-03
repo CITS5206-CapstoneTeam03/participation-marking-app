@@ -1,125 +1,79 @@
+import Image from "next/image";
 import Link from "next/link";
-import { AppShell } from "./components/app-shell";
-import { dashboardMetrics, participationWeeks } from "./data/mock-data";
 
-const toneClasses = {
-  navy: "bg-[rgba(20,33,61,0.09)] text-[var(--navy)]",
-  gold: "bg-[rgba(252,163,17,0.16)] text-[var(--navy)]",
-  mint: "bg-[rgba(42,157,143,0.14)] text-[var(--mint)]",
-};
+const navItems = [
+  { label: "Dashboard", active: false },
+  { label: "Mark Participation", active: true },
+  { label: "Analytics", active: false },
+];
+
+function NavIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" stroke={active ? "#3f5efb" : "#4b5d75"} strokeWidth="2" />
+      <rect x="13.5" y="3.5" width="7" height="7" rx="1.5" stroke={active ? "#3f5efb" : "#4b5d75"} strokeWidth="2" />
+      <rect x="3.5" y="13.5" width="7" height="7" rx="1.5" stroke={active ? "#3f5efb" : "#4b5d75"} strokeWidth="2" />
+      <rect x="13.5" y="13.5" width="7" height="7" rx="1.5" stroke={active ? "#3f5efb" : "#4b5d75"} strokeWidth="2" />
+    </svg>
+  );
+}
 
 export default function Home() {
-  const nextWeek = participationWeeks.find((week) => week.status !== "locked") ?? participationWeeks[0];
-
   return (
-    <AppShell
-      title="Dashboard"
-      description="A tutor-facing overview of marking progress, available weeks, and quick entry points into the touch-friendly participation flow."
-      action={
-        <Link
-          href={`/marking/${nextWeek.id}`}
-          className="inline-flex items-center rounded-full bg-[var(--navy)] px-5 py-3 text-sm font-semibold text-white hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(20,33,61,0.18)]"
-        >
-          Continue marking {nextWeek.label}
-        </Link>
-      }
-    >
-      <section className="grid gap-4 md:grid-cols-3">
-        {dashboardMetrics.map((metric) => (
-          <article key={metric.label} className="panel p-5 lg:p-6">
-            <div className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${toneClasses[metric.tone]}`}>
-              {metric.label}
-            </div>
-            <p className="mt-5 text-4xl font-semibold tracking-tight text-[var(--navy)]">{metric.value}</p>
-            <p className="mt-3 text-sm leading-6 text-[var(--ink-soft)]">{metric.helper}</p>
-          </article>
-        ))}
-      </section>
+    <div className="prototype-shell">
+      <aside className="prototype-sidebar">
+        <div className="prototype-logo">
+          <Image src="/uwa-logo.png" alt="UWA logo" width={52} height={52} priority />
+          <div>
+            <p className="text-[15px] font-semibold leading-5 text-[#172033]">UWA Participation</p>
+            <p className="text-[15px] leading-5 text-[#5a6a81]">Marking System</p>
+          </div>
+        </div>
 
-      <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <article className="panel p-5 lg:p-6">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="eyebrow">Weekly Participation Marks</p>
-              <h3 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--navy)]">
-                Active participation weeks
-              </h3>
-            </div>
+        <nav className="prototype-nav">
+          {navItems.map((item) => (
             <Link
-              href="/config"
-              className="rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--navy)] hover:-translate-y-0.5"
+              key={item.label}
+              href="/"
+              className={`prototype-nav-link ${item.active ? "active" : ""}`}
             >
-              Open unit config
+              <NavIcon active={item.active} />
+              <span>{item.label}</span>
             </Link>
+          ))}
+        </nav>
+
+        <div className="prototype-sidebar-footer">
+          <p className="mb-3 text-sm font-medium text-[#5a6a81]">View Mode</p>
+          <div className="mode-toggle">
+            <div className="mode-chip">Coordinator</div>
+            <div className="mode-chip active">Tutor</div>
           </div>
 
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
-            {participationWeeks.map((week) => (
-              <Link
-                key={week.id}
-                href={`/marking/${week.id}`}
-                className="rounded-[24px] border border-[var(--line)] bg-white/80 p-5 hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(20,33,61,0.08)]"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="eyebrow">{week.workshop}</p>
-                    <h4 className="mt-2 text-xl font-semibold text-[var(--navy)]">{week.label}</h4>
-                  </div>
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                      week.status === "locked"
-                        ? "bg-[rgba(20,33,61,0.1)] text-[var(--navy)]"
-                        : week.status === "in-progress"
-                          ? "bg-[rgba(252,163,17,0.16)] text-[var(--navy)]"
-                          : "bg-[rgba(42,157,143,0.14)] text-[var(--mint)]"
-                    }`}
-                  >
-                    {week.status}
-                  </span>
-                </div>
-
-                <p className="mt-3 text-sm leading-6 text-[var(--ink-soft)]">{week.date}</p>
-                <div className="mt-4 h-2 rounded-full bg-[rgba(20,33,61,0.08)]">
-                  <div
-                    className="h-full rounded-full bg-[linear-gradient(90deg,var(--gold),var(--mint))]"
-                    style={{ width: `${week.completion}%` }}
-                  />
-                </div>
-                <p className="mt-3 text-sm font-medium text-[var(--navy)]">{week.submissions}</p>
-              </Link>
-            ))}
+          <div className="mt-4">
+            <p className="text-[15px] font-semibold text-[#172033]">Dr. Joachim Strand</p>
+            <p className="text-sm text-[#708097]">Coordinator</p>
+            <p className="mt-1 text-sm font-medium text-[#3f5efb]">Viewing as: tutor</p>
           </div>
-        </article>
+        </div>
+      </aside>
 
-        <article className="panel p-5 lg:p-6">
-          <p className="eyebrow">Workflow Notes</p>
-          <h3 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--navy)]">
-            Shared frontend delivery plan
-          </h3>
+      <main className="prototype-main">
+        <header className="prototype-header">
+          <h1>Mark Participation</h1>
+          <p>Select the workshop assigned to you before choosing the week to mark.</p>
+        </header>
 
-          <ol className="mt-6 space-y-4 text-sm leading-6 text-[var(--ink-soft)]">
-            <li className="rounded-2xl bg-white/80 p-4">
-              1. Build the week selection route and lock-state indicators for tutors.
-            </li>
-            <li className="rounded-2xl bg-white/80 p-4">
-              2. Implement the 0-3 marking cards with large tap targets for workshop use.
-            </li>
-            <li className="rounded-2xl bg-white/80 p-4">
-              3. Add the unit configuration dashboard for enabled weeks and score weighting.
-            </li>
-            <li className="rounded-2xl bg-white/80 p-4">
-              4. Swap mock data for API-backed state after backend contracts stabilise.
-            </li>
-          </ol>
-
-          <Link
-            href="/marking"
-            className="mt-6 inline-flex items-center rounded-full bg-[var(--gold)] px-5 py-3 text-sm font-semibold text-[var(--navy)] hover:-translate-y-0.5"
-          >
-            Review week selection flow
-          </Link>
-        </article>
-      </section>
-    </AppShell>
+        <section className="real-page-panel">
+          <article className="prototype-card workshop-picker-card">
+            <h2>Select Workshop</h2>
+            <Link href="/" className="workshop-option">
+              <span className="workshop-option-title">Workshop 01</span>
+              <span className="workshop-option-subtitle">35 students</span>
+            </Link>
+          </article>
+        </section>
+      </main>
+    </div>
   );
 }
