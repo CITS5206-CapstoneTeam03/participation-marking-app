@@ -1,9 +1,24 @@
 from fastapi import Depends, FastAPI, APIRouter, HTTPException
 from sqlalchemy.orm import Session
+from sqladmin import Admin, ModelView
 
-from db import User, get_db
+from db import User, get_db, engine
 
 app = FastAPI()
+
+# Configure the Admin interface
+admin = Admin(app, engine)
+
+# Add an Admin view for the User model
+class UserAdmin(ModelView, model=User):
+    # These are the columns from the User model that will be shown in the table
+    column_list = [User.id, User.name, User.email]
+    
+    # You can also add icons, change display names, configure search columns, etc.
+    icon = "fa-solid fa-user"
+
+admin.add_view(UserAdmin)
+
 router = APIRouter(prefix="/api")
 
 @router.get("/")
