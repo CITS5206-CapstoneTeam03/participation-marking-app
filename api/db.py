@@ -3,7 +3,7 @@ import sys
 
 from pathlib import Path
 from dotenv import load_dotenv
-from sqlalchemy import Column, Integer, String, create_engine
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
 # Get absolute path of the directory that contains db.py (the /api folder)
@@ -35,13 +35,6 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 Base = declarative_base()
 
-
-class User(Base):
-    __tablename__ = "test_users"
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String(100))
-    email = Column(String(100))
 
 
 def get_db() -> Session:
