@@ -10,6 +10,7 @@ from schemas.users import UserCreate, UserResponse, UserUpdate
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
+# Create a new user
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
     # 1. Check if user already exists
@@ -34,6 +35,7 @@ def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
     return new_user
 
 
+# Get all users
 @router.get("/", response_model=List[UserResponse])
 def get_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Retrieve all users with pagination setup."""
@@ -41,6 +43,7 @@ def get_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return users
 
 
+# Get a specific user
 @router.get("/{user_id}", response_model=UserResponse)
 def get_user(user_id: str, db: Session = Depends(get_db)):
     """Retrieve a specific user by their UUID."""
@@ -53,6 +56,7 @@ def get_user(user_id: str, db: Session = Depends(get_db)):
     return user
 
 
+# Update a specific user
 @router.patch("/{user_id}", response_model=UserResponse)
 def update_user(user_id: str, user_update: UserUpdate, db: Session = Depends(get_db)):
     """
@@ -84,6 +88,7 @@ def update_user(user_id: str, user_update: UserUpdate, db: Session = Depends(get
     return user
 
 
+# Delete a specific user
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(user_id: str, db: Session = Depends(get_db)):
     """Delete a user from the system."""

@@ -15,7 +15,8 @@ load_dotenv(dotenv_path=BASE_DIR / ".env")
 DB_USER = os.getenv("DB_USER", "")
 DB_PASS = os.getenv("DB_PASS", "")
 DB_HOST = os.getenv("DB_HOST", "")
-DB_NAME = "partimark-staging" if "--reload" in sys.argv else os.getenv("DB_NAME", "")
+#DB_NAME = "partimark-staging" if "--reload" in sys.argv else os.getenv("DB_NAME", "")
+DB_NAME = os.getenv("DB_NAME", "partimark-staging")
 
 # Normalize SSL_CA path so it works even when running from project root
 # Assumes certs are located in /api/certs

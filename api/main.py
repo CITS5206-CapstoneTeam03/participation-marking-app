@@ -4,8 +4,38 @@ from sqladmin import Admin, ModelView
 
 from db import get_db, engine
 from models.users import User
+from routes import users
 
-app = FastAPI()
+# ==========================================
+# 1. Swagger UI Metadata Best Practices
+# ==========================================
+description = """
+Backend API for the Participation Marking Application. 
+
+## Users
+Operations related to user management, profiles, and administration.
+
+## Authentication (Coming Soon)
+Endpoints for login, JWT token generation, and secure session management.
+"""
+
+tags_metadata = [
+    {
+        "name": "Users",
+        "description": "Manage user accounts, roles, and profiles. *Login logic handled separately.*",
+    },
+]
+
+app = FastAPI(
+    title="PartiMark Documentation",
+    description=description,
+    version="1.0.0",
+    contact={
+        "name": "System Administrator",
+        "email": "admin@example.com",
+    },
+    openapi_tags=tags_metadata,
+)
 
 # Configure the Admin interface
 admin = Admin(app, engine)
@@ -45,3 +75,4 @@ def db_test(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"DB test failed: {e}")
 
 app.include_router(router)
+app.include_router(users.router, prefix="/api")
