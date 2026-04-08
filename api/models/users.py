@@ -22,6 +22,10 @@ class User(Base):
     user_id: Mapped[str] = mapped_column(String(50), primary_key=True, index=True, default=lambda: str(uuid.uuid4()))
     
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+
+    # Industry best practice: store hashed passwords (e.g. bcrypt/argon2), never plain text.
+    # String(255) is used to safely accommodate the lengths of standard hashing outputs.
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     
     first_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     last_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
