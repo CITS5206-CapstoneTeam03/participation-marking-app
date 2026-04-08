@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
+import bcrypt
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from models.users import UserRole
@@ -29,6 +30,14 @@ class UserCreate(UserBase):
         min_length=8, 
         description="The raw password. This should be hashed before saving to the database."
     )
+
+    def get_hashed_password(self) -> str:
+        """Utility method to securely hash the password using bcrypt."""
+        # bcrypt requires bytes, so we encode the string to utf-8
+        salt = bcrypt.gensalt()
+        hashed_password = bcrypt.hashpw(self.password.encode('utf-8'), salt)
+        # decode back to string for database storage
+        return hashed_password.decode('utf-8')
 
 
 #
