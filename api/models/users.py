@@ -27,13 +27,13 @@ class User(Base):
     # String(255) is used to safely accommodate the lengths of standard hashing outputs.
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     
-    first_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    last_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    preferred_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    display_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    first_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    last_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    preferred_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    display_name: Mapped[str] = mapped_column(String(200), nullable=False)
     
     # Use SQLAlchemy Enum coupled with Python Enum for strictly typing Roles
-    role: Mapped[Optional[UserRole]] = mapped_column(Enum(UserRole), nullable=True)
+    role: Mapped[UserRole] = mapped_column(Enum(UserRole), nullable=False)
     
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     
