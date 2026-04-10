@@ -9,6 +9,7 @@ from db import Base
 if TYPE_CHECKING:
 	from models.users import User
 	from models.students import Student
+    from models.workshops import Workshop
 
 
 class ParticipationMark(Base):
@@ -23,13 +24,21 @@ class ParticipationMark(Base):
 	)
 
 	mark_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+
+    # Each mark is associated with exactly one student, one workshop, and one week. We use ForeignKey to enforce referential integrity.
 	student_id: Mapped[str] = mapped_column(
 		String(20),
 		ForeignKey("students.student_id", ondelete="RESTRICT"),
 		nullable=False,
 		index=True,
 	)
-	workshop_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+	workshop_id: Mapped[int] = mapped_column(
+        Integer, 
+        ForeignKey("workshops.workshop_id", ondelete="RESTRICT"),
+        nullable=False, 
+        index=True
+    )
+
 	week_number: Mapped[int] = mapped_column(Integer, nullable=False)
 	score: Mapped[int] = mapped_column(Integer, nullable=False)
 
@@ -52,12 +61,17 @@ class ParticipationMark(Base):
 		nullable=True,
 	)
 
+    # Relationships to enable easy navigation between related entities.
 	marked_by_user: Mapped["User"] = relationship(
 		"User",
 		back_populates="marks_given",
 	)
 	student: Mapped["Student"] = relationship(
 		"Student",
+		back_populates="participation_marks",
+	)
+	workshop: Mapped["Workshop"] = relationship(
+		"Workshop",
 		back_populates="participation_marks",
 	)
 

@@ -11,6 +11,7 @@ from db import Base
 
 if TYPE_CHECKING:
     from models.marks import ParticipationMark
+    from models.workshops import Workshop
 
 class UserRole(str, enum.Enum):
     ADMIN = "admin"
@@ -47,6 +48,12 @@ class User(Base):
     marks_given: Mapped[list["ParticipationMark"]] = relationship(
         "ParticipationMark",
         back_populates="marked_by_user",
+    )
+
+    # One user (tutor) can manage many workshops.
+    workshops_tutored: Mapped[list["Workshop"]] = relationship(
+        "Workshop",
+        back_populates="tutor",
     )
 
     def __repr__(self) -> str:
