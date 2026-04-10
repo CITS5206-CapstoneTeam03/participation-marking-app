@@ -2,11 +2,10 @@
 
 import { useState } from "react";
 import { AppShell } from "../components/app-shell";
-import { configWeeks } from "../data/mock-data";
+import { useAppContext } from "../context/app-context";
 
 export default function ConfigPage() {
-  const [weeks, setWeeks] = useState(configWeeks);
-  const [maxWeeklyScore, setMaxWeeklyScore] = useState(3);
+  const { configWeeks: weeks, setConfigWeeks: setWeeks, maxWeeklyScore, setMaxWeeklyScore } = useAppContext();
   const [saved, setSaved] = useState(false);
 
   const selectedWeeks = weeks.filter((week) => week.enabled);
@@ -14,8 +13,8 @@ export default function ConfigPage() {
 
   const toggleWeek = (weekId: string) => {
     setSaved(false);
-    setWeeks((currentWeeks) =>
-      currentWeeks.map((week) =>
+    setWeeks(
+      weeks.map((week) =>
         week.id === weekId && !week.locked ? { ...week, enabled: !week.enabled } : week,
       ),
     );
@@ -23,8 +22,8 @@ export default function ConfigPage() {
 
   const lockWeeks = (targetWeeks: string[]) => {
     setSaved(false);
-    setWeeks((currentWeeks) =>
-      currentWeeks.map((week) =>
+    setWeeks(
+      weeks.map((week) =>
         targetWeeks.includes(week.id) ? { ...week, locked: true, enabled: true } : week,
       ),
     );
