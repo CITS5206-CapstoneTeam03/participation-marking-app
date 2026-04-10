@@ -1,3 +1,5 @@
+export type Score = 0 | 1 | 2 | 3;
+
 export type NavItem = {
   href: string;
   label: string;
@@ -30,10 +32,13 @@ export type StudentMark = {
   notes: string;
   score: 0 | 1 | 2 | 3;
   previousAverage: number;
+  /** Student photo URL for display during marking (FR-2.3 — mandatory) */
+  photoUrl: string;
 };
 
 export type ConfigWeek = {
   id: string;
+  weekNumber: number;
   label: string;
   enabled: boolean;
   locked: boolean;
@@ -171,6 +176,7 @@ export const weeklyMarks: Record<string, StudentMark[]> = {
       notes: "Led the schema discussion and clarified API contracts.",
       score: 3,
       previousAverage: 2.7,
+      photoUrl: "https://i.pravatar.cc/96?img=47",
     },
     {
       id: "std-2",
@@ -180,6 +186,7 @@ export const weeklyMarks: Record<string, StudentMark[]> = {
       notes: "Contributed to planning, but needed prompting on blockers.",
       score: 2,
       previousAverage: 2.2,
+      photoUrl: "https://i.pravatar.cc/96?img=12",
     },
     {
       id: "std-3",
@@ -189,6 +196,7 @@ export const weeklyMarks: Record<string, StudentMark[]> = {
       notes: "Present but passive. Limited verbal contribution this week.",
       score: 1,
       previousAverage: 1.6,
+      photoUrl: "https://i.pravatar.cc/96?img=23",
     },
     {
       id: "std-4",
@@ -198,6 +206,7 @@ export const weeklyMarks: Record<string, StudentMark[]> = {
       notes: "Absent and no workshop artefact submitted.",
       score: 0,
       previousAverage: 1.3,
+      photoUrl: "https://i.pravatar.cc/96?img=33",
     },
   ],
   "week-6": [
@@ -209,6 +218,7 @@ export const weeklyMarks: Record<string, StudentMark[]> = {
       notes: "Prototype walkthrough and evidence uploaded.",
       score: 2,
       previousAverage: 2.4,
+      photoUrl: "https://i.pravatar.cc/96?img=44",
     },
     {
       id: "std-6",
@@ -218,6 +228,7 @@ export const weeklyMarks: Record<string, StudentMark[]> = {
       notes: "Clear evidence of facilitation and peer support.",
       score: 3,
       previousAverage: 2.8,
+      photoUrl: "https://i.pravatar.cc/96?img=15",
     },
   ],
   "week-9": [
@@ -229,6 +240,7 @@ export const weeklyMarks: Record<string, StudentMark[]> = {
       notes: "Identified defects and assigned owners during iteration review.",
       score: 3,
       previousAverage: 2.5,
+      photoUrl: "https://i.pravatar.cc/96?img=38",
     },
     {
       id: "std-8",
@@ -238,20 +250,21 @@ export const weeklyMarks: Record<string, StudentMark[]> = {
       notes: "Participated in demo, limited documentation evidence.",
       score: 2,
       previousAverage: 1.9,
+      photoUrl: "https://i.pravatar.cc/96?img=52",
     },
   ],
 };
 
 export const configWeeks: ConfigWeek[] = [
-  { id: "week-1", label: "Week 1", enabled: true, locked: true },
-  { id: "week-2", label: "Week 2", enabled: true, locked: true },
-  { id: "week-3", label: "Week 3", enabled: true, locked: true },
-  { id: "week-4", label: "Week 4", enabled: true, locked: true },
-  { id: "week-6", label: "Week 6", enabled: true, locked: false },
-  { id: "week-9", label: "Week 9", enabled: true, locked: false },
-  { id: "week-10", label: "Week 10", enabled: true, locked: false },
-  { id: "week-11", label: "Week 11", enabled: true, locked: false },
-  { id: "week-12", label: "Week 12", enabled: false, locked: false },
+  { id: "week-1",  weekNumber: 1,  label: "Week 1",  enabled: true,  locked: true  },
+  { id: "week-2",  weekNumber: 2,  label: "Week 2",  enabled: true,  locked: true  },
+  { id: "week-3",  weekNumber: 3,  label: "Week 3",  enabled: true,  locked: true  },
+  { id: "week-4",  weekNumber: 4,  label: "Week 4",  enabled: true,  locked: true  },
+  { id: "week-6",  weekNumber: 6,  label: "Week 6",  enabled: true,  locked: false },
+  { id: "week-9",  weekNumber: 9,  label: "Week 9",  enabled: true,  locked: false },
+  { id: "week-10", weekNumber: 10, label: "Week 10", enabled: true,  locked: false },
+  { id: "week-11", weekNumber: 11, label: "Week 11", enabled: true,  locked: false },
+  { id: "week-12", weekNumber: 12, label: "Week 12", enabled: false, locked: false },
 ];
 
 export function getWeekById(weekId: string) {
