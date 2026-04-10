@@ -807,6 +807,18 @@ button {
   opacity: 0.85;
 }
 
+.marking-nav-btn--complete {
+  background: var(--mint);
+  border-color: var(--mint);
+  color: #fff;
+}
+
+.marking-nav-btn--complete:hover:not(:disabled) {
+  border-color: var(--mint);
+  color: #fff;
+  opacity: 0.85;
+}
+
 /* ─── Responsive adjustments ─────────────────────────────── */
 
 @media (max-width: 640px) {

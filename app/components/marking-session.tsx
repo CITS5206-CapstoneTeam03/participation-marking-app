@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { MarkingCard } from "./marking-card";
 import type { Score } from "../data/mock-data";
 import type { StudentMark } from "../data/mock-data";
@@ -27,6 +28,9 @@ type MarkingSessionProps = {
 export function MarkingSession({ students, weekId, weekLabel }: MarkingSessionProps) {
   const { sessionMarks, setMark } = useAppContext();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const router = useRouter();
+
+  const isLastStudent = currentIndex === students.length - 1;
 
   const weekMarks = sessionMarks[weekId] ?? {};
   const currentStudent = students[currentIndex];
@@ -108,15 +112,25 @@ export function MarkingSession({ students, weekId, weekLabel }: MarkingSessionPr
           ‹ Previous
         </button>
 
-        <button
-          type="button"
-          className="marking-nav-btn"
-          onClick={goToNext}
-          disabled={currentIndex === students.length - 1}
-          aria-label="Next student"
-        >
-          Next ›
-        </button>
+        {isLastStudent ? (
+          <button
+            type="button"
+            className="marking-nav-btn marking-nav-btn--complete"
+            onClick={() => router.push(`/marking/${weekId}/review`)}
+            aria-label="Review all marks"
+          >
+            Complete
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="marking-nav-btn"
+            onClick={goToNext}
+            aria-label="Next student"
+          >
+            Next ›
+          </button>
+        )}
       </nav>
     </div>
   );
