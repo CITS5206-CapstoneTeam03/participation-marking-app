@@ -8,6 +8,7 @@ from db import Base
 
 if TYPE_CHECKING:
 	from models.users import User
+	from models.students import Student
 
 
 class ParticipationMark(Base):
@@ -22,7 +23,12 @@ class ParticipationMark(Base):
 	)
 
 	mark_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-	student_id: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+	student_id: Mapped[str] = mapped_column(
+		String(20),
+		ForeignKey("students.student_id", ondelete="RESTRICT"),
+		nullable=False,
+		index=True,
+	)
 	workshop_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
 	week_number: Mapped[int] = mapped_column(Integer, nullable=False)
 	score: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -49,6 +55,10 @@ class ParticipationMark(Base):
 	marked_by_user: Mapped["User"] = relationship(
 		"User",
 		back_populates="marks_given",
+	)
+	student: Mapped["Student"] = relationship(
+		"Student",
+		back_populates="participation_marks",
 	)
 
 	def __repr__(self) -> str:
