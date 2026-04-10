@@ -16,6 +16,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
   const { weekId } = await params;
   const week = getWeekById(weekId);
 
+  // TODO: replace isWeekEnabled with an API call once week config is persisted server-side
   if (!week || !isWeekEnabled(weekId)) {
     notFound();
   }
