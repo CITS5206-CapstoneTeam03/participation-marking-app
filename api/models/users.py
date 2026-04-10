@@ -1,13 +1,16 @@
 import uuid
 import enum
 from datetime import datetime
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from sqlalchemy import String, Boolean, DateTime, func, Enum
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 # Assuming Base is provided by your db configuration
 from db import Base
+
+if TYPE_CHECKING:
+    from models.marks import ParticipationMark
 
 class UserRole(str, enum.Enum):
     ADMIN = "admin"
@@ -39,6 +42,12 @@ class User(Base):
     
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
+
+    # One user can create many participation marks.
+    marks_given: Mapped[list["ParticipationMark"]] = relationship(
+        "ParticipationMark",
+        back_populates="marked_by_user",
+    )
 
     def __repr__(self) -> str:
         return f"<User {self.email}>"
