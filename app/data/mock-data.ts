@@ -164,6 +164,16 @@ export const participationWeeks: ParticipationWeek[] = [
     completion: 0,
     submissions: "Available for tutors",
   },
+  {
+    id: "week-12",
+    weekNumber: 12,
+    label: "Week 12",
+    workshop: "Workshop 12",
+    date: "Final presentations",
+    status: "ready",
+    completion: 0,
+    submissions: "Available for tutors",
+  },
 ];
 
 export const weeklyMarks: Record<string, StudentMark[]> = {
@@ -271,6 +281,10 @@ export function getWeekById(weekId: string) {
   return participationWeeks.find((week) => week.id === weekId);
 }
 
+export function isWeekEnabled(weekId: string): boolean {
+  return configWeeks.some((week) => week.id === weekId && week.enabled);
+}
+
 export function getMarksForWeek(weekId: string) {
-  return weeklyMarks[weekId] ?? weeklyMarks["week-4"];
+  return weeklyMarks[weekId] ?? [];
 }

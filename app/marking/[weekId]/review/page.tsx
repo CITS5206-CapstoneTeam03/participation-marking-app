@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TutorShell } from "../../../components/tutor-shell";
 import { ReviewSession } from "../../../components/review-session";
-import { getMarksForWeek, getWeekById, participationWeeks } from "../../../data/mock-data";
+import { getMarksForWeek, getWeekById, isWeekEnabled, participationWeeks } from "../../../data/mock-data";
 
 export function generateStaticParams() {
   return participationWeeks.map((week) => ({ weekId: week.id }));
@@ -16,7 +16,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
   const { weekId } = await params;
   const week = getWeekById(weekId);
 
-  if (!week) {
+  if (!week || !isWeekEnabled(weekId)) {
     notFound();
   }
 

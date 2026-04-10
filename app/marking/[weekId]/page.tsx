@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { TutorShell } from "../../components/tutor-shell";
 import { MarkingSession } from "../../components/marking-session";
 import { WeekDropdown } from "../../components/week-dropdown";
-import { getMarksForWeek, getWeekById, participationWeeks } from "../../data/mock-data";
+import { getMarksForWeek, getWeekById, isWeekEnabled, participationWeeks } from "../../data/mock-data";
 
 export function generateStaticParams() {
   return participationWeeks.map((week) => ({ weekId: week.id }));
@@ -17,7 +17,7 @@ export default async function WeekMarkingPage({ params }: WeekMarkingPageProps) 
   const { weekId } = await params;
   const week = getWeekById(weekId);
 
-  if (!week) {
+  if (!week || !isWeekEnabled(weekId)) {
     notFound();
   }
 
