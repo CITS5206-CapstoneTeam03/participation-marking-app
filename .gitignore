@@ -1,6 +1,7 @@
 # Frontend
 node_modules/
 .next/
+out/
 
 # API
 api/__pycache__/*
@@ -11,6 +12,9 @@ env/
 ENV/
 .env
 .venv
+
+# TypeScript build cache
+tsconfig.tsbuildinfo
 
 # Editor
 .vscode/
