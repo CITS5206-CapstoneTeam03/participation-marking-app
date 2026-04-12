@@ -4,7 +4,7 @@ from sqladmin import Admin, ModelView
 
 from db import get_db, engine
 from models.users import User
-from routes import users
+from api_version.v1.routes import users
 
 # ==========================================
 # 1. Swagger UI Metadata Best Practices
