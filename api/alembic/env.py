@@ -18,10 +18,14 @@ import os
 import sys
 
 # Add the root /api directory to python path
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+api_dir = os.path.dirname(os.path.dirname(__file__))
+sys.path.insert(0, api_dir)
+# Add /api/partimark_app to python path because the code expects to be run from there
+sys.path.insert(0, os.path.join(api_dir, "partimark_app"))
 
-from db import engine, DATABASE_URL
-from models.users import Base
+from db.db import engine, Base  # type: ignore
+from core.config import settings  # type: ignore
+import models  # type: ignore # Ensures all models are loaded
 
 # add your model's MetaData object here
 # for 'autogenerate' support
@@ -45,7 +49,7 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = DATABASE_URL
+    url = settings.database_url
     context.configure(
         url=url,
         target_metadata=target_metadata,
