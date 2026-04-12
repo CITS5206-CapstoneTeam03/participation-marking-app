@@ -4,12 +4,12 @@ from typing import Optional, TYPE_CHECKING
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from db import Base
+from db.db import Base
 
 if TYPE_CHECKING:
-	from models.users import User
-	from models.students import Student
-    from models.workshops import Workshop
+	from models import User
+	from models import Student
+	from models import Workshop
 
 
 class ParticipationMark(Base):

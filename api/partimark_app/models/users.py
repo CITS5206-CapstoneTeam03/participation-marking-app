@@ -7,11 +7,11 @@ from sqlalchemy import String, Boolean, DateTime, func, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 # Assuming Base is provided by your db configuration
-from db import Base
+from db.db import Base
 
 if TYPE_CHECKING:
-    from models.marks import ParticipationMark
-    from models.workshops import Workshop
+    from models import ParticipationMark
+    from models import Workshop
 
 class UserRole(str, enum.Enum):
     ADMIN = "admin"

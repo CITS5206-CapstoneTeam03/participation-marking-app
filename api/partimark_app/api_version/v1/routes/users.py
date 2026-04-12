@@ -4,7 +4,7 @@ import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from db import get_db
+from db.db import get_db
 from models.users import User
 from schemas.users import UserCreate, UserResponse, UserUpdate
 
