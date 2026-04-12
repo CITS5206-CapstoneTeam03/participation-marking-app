@@ -5,8 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from db.db import get_db
-from models.users import User
 from schemas.users import UserCreate, UserResponse, UserUpdate
+from crud import crud_users as crud
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/users", tags=["Users"])
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
     # 1. Check if user already exists
-    existing_user = db.query(User).filter(User.email == user_in.email).first()
+    existing_user = crud.get_user_by_email(db, email=user_in.email)
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -26,10 +26,7 @@ def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
     user_data["hashed_password"] = user_in.get_hashed_password()
     
     # 3. Save to database
-    new_user = User(**user_data)
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    new_user = crud.create_user(db, user_data=user_data)
     
     # 4. Return new user (FastAPI automatically uses UserResponse to filter out the password)
     return new_user
@@ -39,15 +36,14 @@ def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
 @router.get("/", response_model=List[UserResponse])
 def get_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Retrieve all users with pagination setup."""
-    users = db.query(User).offset(skip).limit(limit).all()
-    return users
+    return crud.get_users(db, skip=skip, limit=limit)
 
 
 # Get a specific user
 @router.get("/{user_id}", response_model=UserResponse)
 def get_user(user_id: str, db: Session = Depends(get_db)):
     """Retrieve a specific user by their UUID."""
-    user = db.query(User).filter(User.user_id == user_id).first()
+    user = crud.get_user(db, user_id=user_id)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -63,7 +59,7 @@ def update_user(user_id: str, user_update: UserUpdate, db: Session = Depends(get
     Update user profile data.
     Uses PATCH methodology (only updates fields explicitly provided).
     """
-    user = db.query(User).filter(User.user_id == user_id).first()
+    user = crud.get_user(db, user_id=user_id)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -80,25 +76,20 @@ def update_user(user_id: str, user_update: UserUpdate, db: Session = Depends(get
         hashed_password = bcrypt.hashpw(raw_password.encode('utf-8'), salt).decode('utf-8')
         update_data["hashed_password"] = hashed_password
         
-    for key, value in update_data.items():
-        setattr(user, key, value)
-        
-    db.commit()
-    db.refresh(user)
-    return user
+    updated_user = crud.update_user(db, db_user=user, update_data=update_data)
+    return updated_user
 
 
 # Delete a specific user
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(user_id: str, db: Session = Depends(get_db)):
     """Delete a user from the system."""
-    user = db.query(User).filter(User.user_id == user_id).first()
+    user = crud.get_user(db, user_id=user_id)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found."
         )
     
-    db.delete(user)
-    db.commit()
+    crud.delete_user(db, db_user=user)
     return None
