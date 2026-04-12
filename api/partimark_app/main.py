@@ -2,7 +2,7 @@ from fastapi import Depends, FastAPI, APIRouter, HTTPException
 from sqlalchemy.orm import Session
 from sqladmin import Admin, ModelView
 
-from db import get_db, engine
+from db.db import get_db, engine
 from models.users import User
 from api_version.v1.routes import users
 
