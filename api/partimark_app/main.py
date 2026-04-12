@@ -4,7 +4,7 @@ from sqladmin import Admin, ModelView
 
 from db.db import get_db, engine
 from models.users import User
-from api_version.v1.routes import users
+from api_version.v1.api import api_router
 
 # ==========================================
 # 1. Swagger UI Metadata Best Practices
@@ -75,4 +75,4 @@ def db_test(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"DB test failed: {e}")
 
 app.include_router(router)
-app.include_router(users.router, prefix="/api")
+app.include_router(api_router, prefix="/api")

@@ -8,7 +8,7 @@ from db.db import get_db
 from schemas.users import UserCreate, UserResponse, UserUpdate
 from crud import crud_users as crud
 
-router = APIRouter(prefix="/users", tags=["Users"])
+router = APIRouter()
 
 # Create a new user
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
