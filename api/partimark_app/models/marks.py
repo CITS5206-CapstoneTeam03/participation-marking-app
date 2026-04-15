@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 	from models import User
 	from models import Student
 	from models import Workshop
+	#from models import Config
 
 
 class ParticipationMark(Base):
@@ -25,7 +26,7 @@ class ParticipationMark(Base):
 
 	mark_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
-    # Each mark is associated with exactly one student, one workshop, and one week. We use ForeignKey to enforce referential integrity.
+    # Each mark is associated with exactly one student, one workshop, one config, and one week. We use ForeignKey to enforce referential integrity.
 	student_id: Mapped[str] = mapped_column(
 		String(20),
 		ForeignKey("students.student_id", ondelete="RESTRICT"),
@@ -38,6 +39,12 @@ class ParticipationMark(Base):
         nullable=False, 
         index=True
     )
+	# semester_id: Mapped[int] = mapped_column(
+    #     Integer, 
+    #     ForeignKey("configs.semester_id", ondelete="RESTRICT"),
+    #     nullable=False, 
+    #     index=True
+    # )
 
 	week_number: Mapped[int] = mapped_column(Integer, nullable=False)
 	score: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -74,9 +81,13 @@ class ParticipationMark(Base):
 		"Workshop",
 		back_populates="participation_marks",
 	)
+	# config: Mapped["Config"] = relationship(
+	# 	"Config",
+	# 	back_populates="participation_marks",
+	# )
 
 	def __repr__(self) -> str:
 		return (
 			f"<ParticipationMark mark_id={self.mark_id} student_id={self.student_id} "
-			f"workshop_id={self.workshop_id} week={self.week_number} score={self.score}>"
+			f"workshop_id={self.workshop_id} week={self.week_number} score={self.score}>" #semester_id={self.semester_id}
 		)
