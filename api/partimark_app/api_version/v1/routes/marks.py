@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 from db.db import get_db
 from schemas.marks import MarkCreate, MarkResponse, MarkUpdate
 from crud import crud_marks as crud
+from services import csv_export
+from fastapi.responses import StreamingResponse
 
 router = APIRouter()
 
@@ -31,6 +33,36 @@ def get_marks_by_workshop(workshop_id: int, db: Session = Depends(get_db)):
     # TODO: Pass semester_id parameter to crud.get_marks_by_workshop once implemented.
     marks = crud.get_marks_by_workshop(db, workshop_id=workshop_id)
     return marks
+
+
+# Export all marks for the entire current semester into an LMS-compatible CSV
+# TODO: Update this route path to include /{semester_id}/export when Config model is ready.
+@router.get("/export/semester")
+def export_semester_grades(
+    assessment_column_name: str, 
+    db: Session = Depends(get_db)
+):
+    """
+    Exports the entire semester's grades into the strict LMS-compatible CSV format.
+    Pass `assessment_column_name` as a query parameter (e.g. ?assessment_column_name=COMM3003-Week4)
+    """
+    # 1. Ask CRUD to grab the pure database data for the ENTIRE semester
+    # TODO: Add semester_id parameter to crud.get_all_marks_by_semester once implemented
+    marks = crud.get_all_marks_by_semester(db)
+    
+    if not marks:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No marks found to export for the semester."
+        )
+        
+    # 2. Hand the pure data over to the Export Service to get specifically formatted
+    csv_string = csv_export.generate_lms_export(marks, assessment_column_name=assessment_column_name)
+    
+    # 3. Return the exact file as a system download
+    response = StreamingResponse(iter([csv_string]), media_type="text/csv")
+    response.headers["Content-Disposition"] = "attachment; filename=semester_export.csv"
+    return response
 
 
 # Batch Update all marks for a specific workshop

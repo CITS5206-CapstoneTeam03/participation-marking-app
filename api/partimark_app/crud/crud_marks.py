@@ -14,8 +14,7 @@ def get_all_marks_by_semester(
     """Retrieve all marks for all students in a given semester."""
     # TODO: Apply semester_id filter to the query here once available.
     # query = query.filter(ParticipationMark.semester_id == semester_id)
-    
-    return []
+    return db.query(ParticipationMark).all()
 
 # TODO: Add semester_id parameter once the Config model is built to ensure strict filtering.
 def get_marks_by_workshop(db: Session, workshop_id: int) -> List[ParticipationMark]:
