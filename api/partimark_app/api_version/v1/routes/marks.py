@@ -47,7 +47,15 @@ def export_semester_grades(
     Pass `assessment_column_name` as a query parameter (e.g. ?assessment_column_name=COMM3003-Week4)
     """
     # 1. Ask CRUD to grab the pure database data for the ENTIRE semester
-    # TODO: Add semester_id parameter to crud.get_all_marks_by_semester once implemented
+    
+    # TODO: [BUSINESS LOGIC] Enforce 'enabled_week' table rule.
+    # Placeholder list storing all allowed weeks. In the future, dynamically query 
+    # the 'enabled_week' table to build this list where `is_enabled == True`.
+    enabled_weeks_placeholder = [1, 2, 3, 4] 
+    
+    # TODO: Update `crud.get_all_marks_by_semester(db)` to natively accept this list, 
+    # strictly forcing the SQL engine to ONLY query marks that fall inside `enabled_weeks_placeholder`.
+    # Example: marks = crud.get_all_marks_by_semester(db, semester_id=current, valid_weeks=enabled_weeks_placeholder)
     marks = crud.get_all_marks_by_semester(db)
     
     if not marks:

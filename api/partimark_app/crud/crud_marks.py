@@ -10,10 +10,17 @@ def get_all_marks_by_semester(
     db: Session, 
     # TODO: Add semester_id parameter once the Config model is built.
     # semester_id: int
+    # TODO: Add valid_weeks array payload passed down from the endpoint.
+    # valid_weeks: list[int]
 ) -> List[ParticipationMark]:
     """Retrieve all marks for all students in a given semester."""
     # TODO: Apply semester_id filter to the query here once available.
-    # query = query.filter(ParticipationMark.semester_id == semester_id)
+    # query = db.query(ParticipationMark).filter(ParticipationMark.semester_id == semester_id)
+    #
+    # TODO: Apply enabled_week lock filtering directly natively over SQL.
+    # query = query.filter(ParticipationMark.week_number.in_(valid_weeks))
+    # return query.all()
+    
     return db.query(ParticipationMark).all()
 
 # TODO: Add semester_id parameter once the Config model is built to ensure strict filtering.
