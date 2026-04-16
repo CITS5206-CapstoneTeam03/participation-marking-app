@@ -73,6 +73,15 @@ def batch_update_workshop_marks(workshop_id: int, marks_in: List[MarkUpdate], db
     Mass update route. Receives a list of student marks and efficiently applies changes
     all at once via the underlying CRUD service.
     """
+    # TODO: [BUSINESS LOGIC] Fetch current semester Config here to enforce marking period locks.
+    # config = crud.get_current_config(db)
+    # target_week = marks_in[0].week_number if marks_in else None
+    # if target_week:
+    #     if config.week6_lock_enabled and target_week <= 6:
+    #         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Marks for Weeks 1-6 are locked.")
+    #     if config.week12_lock_enabled and target_week <= 12:
+    #         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Marks for Weeks 1-12 are locked.")
+    
     # 1. Fetch exactly what currently exists for this specific workshop
     # TODO: Add semester_id parameter to crud.get_marks_by_workshop once implemented
     existing_marks = crud.get_marks_by_workshop(db, workshop_id=workshop_id)
