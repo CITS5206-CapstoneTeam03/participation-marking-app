@@ -1,7 +1,9 @@
+from email.policy import default
+import enum
 from datetime import datetime
 from typing import Optional, TYPE_CHECKING
 
-from sqlalchemy import DateTime, String, func
+from sqlalchemy import DateTime, String, func, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db.db import Base
@@ -9,6 +11,10 @@ from db.db import Base
 if TYPE_CHECKING:
 	from models import ParticipationMark
 
+class StudentStatus(str, enum.Enum):
+    ENROLLED = "enrolled"
+    DROPPED = "dropped"
+    EXEMPTED = "exempted"
 
 class Student(Base):
 	__tablename__ = "students"
@@ -18,8 +24,8 @@ class Student(Base):
 	last_name: Mapped[str] = mapped_column(String(100), nullable=False)
 	preferred_name: Mapped[str] = mapped_column(String(100), nullable=False)
 	email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
-	image_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
-	status: Mapped[str] = mapped_column(String(20), nullable=False)
+	image_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=False)
+	status: Mapped[StudentStatus] = mapped_column(Enum(StudentStatus), nullable=False, default=StudentStatus.ENROLLED)
 
 	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 	updated_at: Mapped[Optional[datetime]] = mapped_column(

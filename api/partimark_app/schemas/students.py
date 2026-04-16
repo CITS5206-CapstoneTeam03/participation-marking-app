@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from models.students import StudentStatus
 
 
 #
@@ -14,7 +15,7 @@ class StudentBase(BaseModel):
     preferred_name: str = Field(..., max_length=100)
     email: EmailStr
     image_url: Optional[str] = Field(None, max_length=500)
-    status: str = Field(..., max_length=20)
+    status: StudentStatus = Field(default=StudentStatus.ENROLLED, description="The current enrollment status code of the student")
 
 
 #
@@ -38,7 +39,7 @@ class StudentUpdate(BaseModel):
     preferred_name: Optional[str] = Field(None, max_length=100)
     email: Optional[EmailStr] = None
     image_url: Optional[str] = Field(None, max_length=500)
-    status: Optional[str] = Field(None, max_length=20)
+    status: Optional[StudentStatus] = Field(None, description="The current enrollment status code of the student")
 
 
 #
