@@ -11,6 +11,16 @@ export const apiClient = axios.create({
   },
 });
 
+// Attach stored JWT to every request if present
+apiClient.interceptors.request.use((config) => {
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("pms-auth-token") : null;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {

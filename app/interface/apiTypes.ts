@@ -20,3 +20,21 @@ export type DbTestResponse = {
   connected: boolean;
   firstRecord: { id: number; name: string | null; email: string | null } | null;
 };
+
+export type LoginInput = {
+  email: string;
+  password: string;
+};
+
+export type AuthUserDto = {
+  id: number;
+  name: string;
+  email: string;
+  role: "coordinator" | "tutor";
+};
+
+export type AuthTokenResponse = {
+  access_token: string;
+  token_type: string;
+  user: AuthUserDto;
+};
