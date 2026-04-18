@@ -159,7 +159,7 @@ export function CoordinatorShell({ children }: CoordinatorShellProps) {
             <button
               type="button"
               className="mode-chip"
-              onClick={() => { setViewRole("tutor"); router.push("/marking"); }}
+              onClick={() => { setViewRole("tutor"); router.push("/"); }}
             >
               Tutor
             </button>

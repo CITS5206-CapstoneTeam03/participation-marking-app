@@ -113,15 +113,31 @@ export function TutorShell({ children }: TutorShellProps) {
 
         {/* Tutor profile */}
         <div className="prototype-sidebar-footer">
-          <div className="mt-2">
+          {authRole === "coordinator" && (
+            <>
+              <p className="mb-3 text-sm font-medium text-[#5a6a81]">View Mode</p>
+              <div className="mode-toggle">
+                <button
+                  type="button"
+                  className="mode-chip"
+                  onClick={handleSwitchToCoordinator}
+                >
+                  Coordinator
+                </button>
+                <button
+                  type="button"
+                  className="mode-chip active"
+                  onClick={() => {}}
+                >
+                  Tutor
+                </button>
+              </div>
+            </>
+          )}
+          <div className="mt-4">
             <p className="text-[15px] font-semibold text-[#172033]">{currentUserName || "Tutor"}</p>
             <p className="text-sm text-[#708097]">Tutor</p>
           </div>
-          {authRole === "coordinator" && (
-            <button type="button" className="tutor-switch-btn" onClick={handleSwitchToCoordinator}>
-              Switch to Coordinator
-            </button>
-          )}
           <button type="button" className="tutor-signout-btn" onClick={handleSignOut}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
