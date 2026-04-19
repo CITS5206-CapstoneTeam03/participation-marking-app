@@ -19,11 +19,8 @@ type MarkingSessionProps = {
  * Mark state is lifted to AppContext so that:
  *  - The week selection screen can show accurate "X / Y marked" counts.
  *  - The Review & Submit page can read marks without prop drilling.
- *  - T-202 (auto-advance, FR-3.3) can extend handleSelect here without
- *    touching the card component at all.
- *
- * To implement auto-advance (T-202), add after setMark:
- *   setTimeout(() => goToNext(), AUTO_ADVANCE_DELAY_MS);
+ *  - Auto-advance navigation (T-202 / FR-3.3) is handled in handleSelect
+ *    without changing the card component.
  */
 export function MarkingSession({ students, weekId, weekLabel }: MarkingSessionProps) {
   const { sessionMarks, setMark } = useAppContext();
