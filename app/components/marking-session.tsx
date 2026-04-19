@@ -29,6 +29,7 @@ export function MarkingSession({ students, weekId, weekLabel }: MarkingSessionPr
   const { sessionMarks, setMark } = useAppContext();
   const [currentIndex, setCurrentIndex] = useState(0);
   const router = useRouter();
+  const AUTO_ADVANCE_DELAY_MS = 250;
 
   const isLastStudent = currentIndex === students.length - 1;
 
