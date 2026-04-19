@@ -30,6 +30,11 @@ export function ReviewSession({ students, weekId, weekLabel }: ReviewSessionProp
 
   const weekMarks = sessionMarks[weekId] ?? {};
 
+  const totalStudents = students.length;
+  const markedCount = Object.keys(weekMarks).length;
+  const unmarkedCount = totalStudents - markedCount;
+  const canSubmit = unmarkedCount === 0;
+  
   // Sort students alphabetically by name (matches Figma)
   const sorted = [...students].sort((a, b) => a.name.localeCompare(b.name));
 
