@@ -164,9 +164,9 @@ export function ReviewSession({ students, weekId, weekLabel }: ReviewSessionProp
         <button
           type="button"
           className="marking-nav-btn"
-          onClick={() => router.push("/marking")}
+          onClick={() => router.push(`/marking/${weekId}`)}
         >
-          Back to Week Selection
+          Back to Marking
         </button>
       </div>
     </div>
