@@ -44,7 +44,22 @@ export function ReviewSession({ students, weekId, weekLabel }: ReviewSessionProp
   }
 
   return (
-    <div>
+      <div>
+            <section className="review-summary" aria-label="Review summary">
+        <div className="review-summary-card">
+          <span className="review-summary-label">Total students</span>
+          <strong className="review-summary-value">{totalStudents}</strong>
+        </div>
+        <div className="review-summary-card">
+          <span className="review-summary-label">Marked</span>
+          <strong className="review-summary-value">{markedCount}</strong>
+        </div>
+        <div className="review-summary-card">
+          <span className="review-summary-label">Unmarked</span>
+          <strong className="review-summary-value">{unmarkedCount}</strong>
+        </div>
+      </section>
+        
       <div className="review-table-wrapper">
         <table className="review-table">
           <thead>
