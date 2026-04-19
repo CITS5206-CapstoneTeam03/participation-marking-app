@@ -107,8 +107,7 @@ export function MarkingSession({ students, weekId, weekLabel }: MarkingSessionPr
         onSelect={handleSelect}
       />
 
-      {/* Navigation — T-202 replaces manual Next with auto-advance */}
-      <nav className="marking-nav" aria-label="Student navigation">
+     <nav className="marking-nav" aria-label="Student navigation">
         <button
           type="button"
           className="marking-nav-btn"
@@ -118,7 +117,7 @@ export function MarkingSession({ students, weekId, weekLabel }: MarkingSessionPr
         >
           ‹ Previous
         </button>
-
+      
         {isLastStudent ? (
           <button
             type="button"
@@ -132,8 +131,10 @@ export function MarkingSession({ students, weekId, weekLabel }: MarkingSessionPr
           <button
             type="button"
             className="marking-nav-btn"
-            onClick={goToNext}
-            aria-label="Next student"
+            disabled
+            aria-hidden="true"
+            tabIndex={-1}
+            style={{ visibility: "hidden" }}
           >
             Next ›
           </button>
