@@ -59,6 +59,13 @@ export function ReviewSession({ students, weekId, weekLabel }: ReviewSessionProp
           <strong className="review-summary-value">{unmarkedCount}</strong>
         </div>
       </section>
+
+      {unmarkedCount > 0 && (
+        <p className="review-warning" role="alert">
+          {unmarkedCount} student{unmarkedCount === 1 ? "" : "s"} still need{" "}
+          mark{unmarkedCount === 1 ? "" : "s"} before submission.
+        </p>
+      )}
         
       <div className="review-table-wrapper">
         <table className="review-table">
@@ -142,14 +149,18 @@ export function ReviewSession({ students, weekId, weekLabel }: ReviewSessionProp
 
       {/* Footer actions */}
       <div className="review-actions">
+  
         <button
           type="button"
           className="marking-nav-btn marking-nav-btn--primary"
           onClick={handleSubmit}
+          disabled={!canSubmit}
+          aria-disabled={!canSubmit}
           style={{ padding: "13px 28px" }}
         >
           Submit &amp; Complete
         </button>
+        
         <button
           type="button"
           className="marking-nav-btn"
