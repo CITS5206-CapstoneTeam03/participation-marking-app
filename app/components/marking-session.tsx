@@ -45,8 +45,14 @@ export function MarkingSession({ students, weekId, weekLabel }: MarkingSessionPr
 
   function handleSelect(score: Score) {
     if (!currentStudent) return;
+
     setMark(weekId, currentStudent.id, score);
-    // T-202: add auto-advance here — e.g. setTimeout(() => goToNext(), 300);
+
+    if (!isLastStudent) {
+      setTimeout(() => {
+        goToNext();
+      }, AUTO_ADVANCE_DELAY_MS);
+    }
   }
 
   function goToPrevious() {
