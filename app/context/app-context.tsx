@@ -62,6 +62,8 @@ interface AppContextValue {
   setMaxWeeklyScore: (score: number) => void;
   totalAssessmentWeighting: number;
   setTotalAssessmentWeighting: (weight: number) => void;
+  activeWorkshopId: string | null;
+  setActiveWorkshopId: (id: string | null) => void;
   sessionMarks: SessionMarks;
   setMark: (weekId: string, studentId: string, score: Score) => void;
   clearWeekMarks: (weekId: string) => void;
@@ -99,24 +101,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [maxWeeklyScore, setMaxWeeklyScore] = useState(3);
   const [totalAssessmentWeighting, setTotalAssessmentWeighting] = useState(20);
   const [sessionMarks, setSessionMarks] = useState<SessionMarks>({});
+  const [activeWorkshopId, setActiveWorkshopId] = useState<string | null>(null);
   const hasHydratedFromStorage = useRef(false);
 
   function applyPersistedState(saved: PersistedState) {
-    if (typeof saved.isAuthenticated === "boolean") {
-      setIsAuthenticated(saved.isAuthenticated);
-    }
-    if (saved.authRole === "coordinator" || saved.authRole === "tutor") {
-      setAuthRole(saved.authRole);
-    }
-    if (typeof saved.currentUserName === "string") {
-      setCurrentUserName(saved.currentUserName);
-    }
-    if (typeof saved.currentUserEmail === "string") {
-      setCurrentUserEmail(saved.currentUserEmail);
-    }
-    if (saved.viewRole === "coordinator" || saved.viewRole === "tutor") {
-      setViewRoleState(saved.viewRole);
-    }
     if (Array.isArray(saved.workshops)) {
       setWorkshops(saved.workshops);
     }
@@ -380,6 +368,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         configWeeks, setConfigWeeks,
         maxWeeklyScore, setMaxWeeklyScore,
         totalAssessmentWeighting, setTotalAssessmentWeighting,
+        activeWorkshopId, setActiveWorkshopId,
         sessionMarks, setMark, clearWeekMarks, getWeekMarkedCount,
       }}
     >
