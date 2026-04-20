@@ -1,26 +1,35 @@
+"use client";
+
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { useParams, notFound } from "next/navigation";
 import { TutorShell } from "../../../components/tutor-shell";
 import { ReviewSession } from "../../../components/review-session";
-import { getMarksForWeek, getWeekById, participationWeeks } from "../../../data/mock-data";
+import { getWeekById } from "../../../data/mock-data";
+import type { StudentMark } from "../../../data/mock-data";
+import { useAppContext } from "../../../context/app-context";
 
-export function generateStaticParams() {
-  return participationWeeks.map((week) => ({ weekId: week.id }));
-}
-
-type ReviewPageProps = {
-  params: Promise<{ weekId: string }>;
-};
-
-export default async function ReviewPage({ params }: ReviewPageProps) {
-  const { weekId } = await params;
+export default function ReviewPage() {
+  const params = useParams();
+  const weekId = typeof params.weekId === "string" ? params.weekId : "";
   const week = getWeekById(weekId);
+
+  const { activeWorkshopId, workshopStudents } = useAppContext();
 
   if (!week) {
     notFound();
   }
 
-  const students = getMarksForWeek(week.id);
+  const rosterStudents = activeWorkshopId ? (workshopStudents[activeWorkshopId] ?? []) : [];
+  const students: StudentMark[] = rosterStudents.map((s) => ({
+    id: s.studentId,
+    name: `${s.preferredName ?? s.firstName} ${s.lastName}`,
+    studentNumber: s.studentId,
+    team: "",
+    notes: "",
+    score: 0,
+    previousAverage: 0,
+    photoUrl: "",
+  }));
 
   return (
     <TutorShell>

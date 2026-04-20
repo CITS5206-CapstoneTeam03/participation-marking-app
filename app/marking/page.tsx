@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { TutorShell } from "../components/tutor-shell";
 import { participationWeeks } from "../data/mock-data";
 import { useAppContext } from "../context/app-context";
 
 export default function MarkingPage() {
-  const { configWeeks, workshops, workshopStudents, currentUserName, sessionMarks } = useAppContext();
+  const router = useRouter();
+  const { configWeeks, workshops, workshopStudents, currentUserName, sessionMarks, setActiveWorkshopId } = useAppContext();
 
   // Only show weeks the UC has enabled that also have a corresponding participationWeek entry
   const enabledIds = new Set(configWeeks.filter((w) => w.enabled && !w.locked).map((w) => w.id));
@@ -113,16 +115,20 @@ export default function MarkingPage() {
             <div className="week-grid">
               {visibleWeeks.map((week) => {
                 const total = selectedWorkshopStudentCount;
-                const marked = Object.keys(sessionMarks[week.id] ?? {}).filter((studentId) =>
-                  selectedWorkshopStudentIds.has(studentId),
+                const marked = Object.keys(sessionMarks[week.id] ?? {}).filter((sid) =>
+                  selectedWorkshopStudentIds.has(sid),
                 ).length;
                 const isComplete = total > 0 && marked >= total;
 
                 return (
-                  <Link
+                  <button
                     key={week.id}
-                    href={`/marking/${week.id}`}
+                    type="button"
                     className={`week-card${isComplete ? " week-card--complete" : ""}`}
+                    onClick={() => {
+                      if (selectedWorkshop) setActiveWorkshopId(selectedWorkshop.id);
+                      router.push(`/marking/${week.id}`);
+                    }}
                   >
                     {isComplete && (
                       <span className="week-card-check" aria-label="Complete">
@@ -136,7 +142,7 @@ export default function MarkingPage() {
                     <p className="week-card-number">{week.weekNumber}</p>
                     <p className="week-card-count">{marked} / {total} marked</p>
                     {isComplete && <p className="week-card-complete-badge">Complete</p>}
-                  </Link>
+                  </button>
                 );
               })}
             </div>
