@@ -86,6 +86,7 @@ type PersistedState = Partial<{
   maxWeeklyScore: number;
   totalAssessmentWeighting: number;
   sessionMarks: SessionMarks;
+  activeWorkshopId: string | null;
 }>;
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -120,6 +121,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     if (saved.sessionMarks && typeof saved.sessionMarks === "object") {
       setSessionMarks(saved.sessionMarks);
+    }
+    if (typeof saved.activeWorkshopId === "string" || saved.activeWorkshopId === null) {
+      setActiveWorkshopId(saved.activeWorkshopId ?? null);
     }
   }
 
@@ -185,6 +189,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           maxWeeklyScore,
           totalAssessmentWeighting,
           sessionMarks,
+          activeWorkshopId,
         }),
       );
     } catch {
@@ -202,6 +207,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     maxWeeklyScore,
     totalAssessmentWeighting,
     sessionMarks,
+    activeWorkshopId,
   ]);
 
   async function loginWithCredentials(email: string, password: string): Promise<void> {
