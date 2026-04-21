@@ -56,12 +56,15 @@ export function MarkingSession({ students, weekId, weekLabel }: MarkingSessionPr
 
   function handleSelect(score: Score) {
     if (!currentStudent) return;
-
+  
     setMark(weekId, currentStudent.id, score);
-
+  
     if (!isLastStudent) {
-      setTimeout(() => {
+      clearAutoAdvanceTimeout();
+  
+      autoAdvanceTimeoutRef.current = setTimeout(() => {
         goToNext();
+        autoAdvanceTimeoutRef.current = null;
       }, AUTO_ADVANCE_DELAY_MS);
     }
   }
