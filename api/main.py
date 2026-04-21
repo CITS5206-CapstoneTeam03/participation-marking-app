@@ -1,9 +1,11 @@
 from fastapi import Depends, FastAPI, APIRouter, HTTPException
 from sqlalchemy.orm import Session
-
 from db import User, get_db
+from logicApp import router as logic_router
 
 app = FastAPI()
+app.include_router(logic_router)
+
 router = APIRouter(prefix="/api")
 
 @router.get("/")

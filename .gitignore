@@ -12,6 +12,7 @@ env/
 ENV/
 .env
 .env.local
+.env.*.local
 .venv
 
 # TypeScript build cache
