@@ -6,7 +6,6 @@ from db.db import get_db, engine
 from models.users import User
 from admin.views import UserAdmin
 from api_version.v1.api import api_router
-from services.logic_app.logicApp import router as logic_router
 
 # ==========================================
 # 1. Swagger UI Metadata Best Practices
@@ -38,7 +37,6 @@ app = FastAPI(
     },
     openapi_tags=tags_metadata,
 )
-app.include_router(logic_router)
 
 # Configure the Admin interface
 admin = Admin(app, engine)
