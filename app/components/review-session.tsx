@@ -121,8 +121,7 @@ export function ReviewSession({ students, weekId, weekLabel }: ReviewSessionProp
 
       {unmarkedCount > 0 && (
         <p className="review-warning" role="alert">
-          {unmarkedCount} student{unmarkedCount === 1 ? "" : "s"} still need{" "}
-          mark{unmarkedCount === 1 ? "" : "s"} before submission.
+          {unmarkedCount} student{unmarkedCount === 1 ? "" : "s"} still need a score before submission.
         </p>
       )}
 
@@ -135,7 +134,7 @@ export function ReviewSession({ students, weekId, weekLabel }: ReviewSessionProp
               <th>Name</th>
               <th>Score</th>
               <th>Status</th>
-              <th>Actions</th>
+              <th>Completion</th>
             </tr>
           </thead>
           <tbody>
