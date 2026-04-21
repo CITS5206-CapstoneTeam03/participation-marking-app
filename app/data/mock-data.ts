@@ -266,11 +266,14 @@ export const weeklyMarks: Record<string, StudentMark[]> = {
 };
 
 export const configWeeks: ConfigWeek[] = [
-  { id: "week-1",  weekNumber: 1,  label: "Week 1",  enabled: true,  locked: true  },
-  { id: "week-2",  weekNumber: 2,  label: "Week 2",  enabled: true,  locked: true  },
-  { id: "week-3",  weekNumber: 3,  label: "Week 3",  enabled: true,  locked: true  },
-  { id: "week-4",  weekNumber: 4,  label: "Week 4",  enabled: true,  locked: true  },
+  { id: "week-1",  weekNumber: 1,  label: "Week 1",  enabled: true,  locked: false },
+  { id: "week-2",  weekNumber: 2,  label: "Week 2",  enabled: true,  locked: false },
+  { id: "week-3",  weekNumber: 3,  label: "Week 3",  enabled: true,  locked: false },
+  { id: "week-4",  weekNumber: 4,  label: "Week 4",  enabled: true,  locked: false },
+  { id: "week-5",  weekNumber: 5,  label: "Week 5",  enabled: false, locked: false },
   { id: "week-6",  weekNumber: 6,  label: "Week 6",  enabled: true,  locked: false },
+  { id: "week-7",  weekNumber: 7,  label: "Week 7",  enabled: false, locked: false },
+  { id: "week-8",  weekNumber: 8,  label: "Week 8",  enabled: false, locked: false },
   { id: "week-9",  weekNumber: 9,  label: "Week 9",  enabled: true,  locked: false },
   { id: "week-10", weekNumber: 10, label: "Week 10", enabled: true,  locked: false },
   { id: "week-11", weekNumber: 11, label: "Week 11", enabled: true,  locked: false },

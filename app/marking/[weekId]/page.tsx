@@ -1,28 +1,38 @@
+"use client";
+
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { useParams, notFound } from "next/navigation";
 import { TutorShell } from "../../components/tutor-shell";
 import { MarkingSession } from "../../components/marking-session";
 import { WeekDropdown } from "../../components/week-dropdown";
-import { getMarksForWeek, getWeekById, isWeekEnabled, participationWeeks } from "../../data/mock-data";
+// TODO(T-API): replace getWeekById with GET /weeks/:weekId API call once backend is integrated
+import { getWeekById } from "../../data/mock-data";
+import type { StudentMark } from "../../data/mock-data";
+import { useAppContext } from "../../context/app-context";
 
-export function generateStaticParams() {
-  return participationWeeks.map((week) => ({ weekId: week.id }));
-}
-
-type WeekMarkingPageProps = {
-  params: Promise<{ weekId: string }>;
-};
-
-export default async function WeekMarkingPage({ params }: WeekMarkingPageProps) {
-  const { weekId } = await params;
+export default function WeekMarkingPage() {
+  const params = useParams();
+  const weekId = typeof params.weekId === "string" ? params.weekId : "";
   const week = getWeekById(weekId);
 
-  // TODO: replace isWeekEnabled with an API call once week config is persisted server-side
-  if (!week || !isWeekEnabled(weekId)) {
+  const { activeWorkshopId, workshopStudents } = useAppContext();
+
+  if (!week) {
     notFound();
   }
 
-  const students = getMarksForWeek(week.id);
+  const rosterStudents = activeWorkshopId ? (workshopStudents[activeWorkshopId] ?? []) : [];
+  // TODO(T-API): populate photoUrl, team, notes, and previousAverage from the student profile API
+  const students: StudentMark[] = rosterStudents.map((s) => ({
+    id: s.studentId,
+    name: `${s.preferredName ?? s.firstName} ${s.lastName}`,
+    studentNumber: s.studentId,
+    team: "",
+    notes: "",
+    score: 0,
+    previousAverage: 0,
+    photoUrl: "",
+  }));
 
   return (
     <TutorShell>
@@ -34,7 +44,6 @@ export default async function WeekMarkingPage({ params }: WeekMarkingPageProps) 
           </p>
         </div>
 
-        {/* Week switcher + Review All */}
         <div className="marking-header-controls">
           <WeekDropdown currentWeekId={weekId} />
           <Link href={`/marking/${weekId}/review`} className="review-all-btn">
