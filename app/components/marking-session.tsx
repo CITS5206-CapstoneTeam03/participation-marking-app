@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MarkingCard } from "./marking-card";
 import type { Score } from "../data/mock-data";
@@ -27,6 +27,7 @@ export function MarkingSession({ students, weekId, weekLabel }: MarkingSessionPr
   const [currentIndex, setCurrentIndex] = useState(0);
   const router = useRouter();
   const AUTO_ADVANCE_DELAY_MS = 250;
+  const autoAdvanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isLastStudent = currentIndex === students.length - 1;
 
@@ -37,6 +38,19 @@ export function MarkingSession({ students, weekId, weekLabel }: MarkingSessionPr
     : null;
   const markedCount = Object.keys(weekMarks).length;
   const progressPercent = students.length > 0 ? (markedCount / students.length) * 100 : 0;
+
+  function clearAutoAdvanceTimeout() {
+    if (autoAdvanceTimeoutRef.current) {
+      clearTimeout(autoAdvanceTimeoutRef.current);
+      autoAdvanceTimeoutRef.current = null;
+    }
+  }
+  
+  useEffect(() => {
+    return () => {
+      clearAutoAdvanceTimeout();
+    };
+  }, []);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
