@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
-from models.students import StudentStatus
+from ..models.students import StudentStatus
 
 
 #
@@ -12,10 +12,13 @@ class StudentBase(BaseModel):
     """Shared properties across most Student-related schemas."""
     first_name: str = Field(..., max_length=100)
     last_name: str = Field(..., max_length=100)
-    preferred_name: str = Field(..., max_length=100)
+    preferred_name: Optional[str] = Field(None, max_length=100)
     email: EmailStr
     image_url: Optional[str] = Field(None, max_length=500)
-    status: StudentStatus = Field(default=StudentStatus.ENROLLED, description="The current enrollment status code of the student")
+    status: StudentStatus = Field(
+        default=StudentStatus.ACTIVE,
+        description="The current status of the student",
+    )
 
 
 #
@@ -31,7 +34,7 @@ class StudentCreate(StudentBase):
 #
 class StudentUpdate(BaseModel):
     """
-    Properties that can be updated via API. 
+    Properties that can be updated via API.
     All fields are optional to support partial updates (PATCH methodology).
     """
     first_name: Optional[str] = Field(None, max_length=100)
@@ -39,11 +42,14 @@ class StudentUpdate(BaseModel):
     preferred_name: Optional[str] = Field(None, max_length=100)
     email: Optional[EmailStr] = None
     image_url: Optional[str] = Field(None, max_length=500)
-    status: Optional[StudentStatus] = Field(None, description="The current enrollment status code of the student")
+    status: Optional[StudentStatus] = Field(
+        None,
+        description="The current status of the student",
+    )
 
 
 #
-# 4. Shared DB Properties 
+# 4. Shared DB Properties
 #
 class StudentInDBBase(StudentBase):
     """Base schema for data returned from the database."""
@@ -51,7 +57,6 @@ class StudentInDBBase(StudentBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    # Pydantic V2 configuration to allow parsing from SQLAlchemy models
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -59,9 +64,7 @@ class StudentInDBBase(StudentBase):
 # 5. HTTP GET (Response)
 #
 class StudentResponse(StudentInDBBase):
-    """
-    Schema used for API responses. 
-    """
+    """Schema used for API responses."""
     pass
 
 
@@ -69,7 +72,5 @@ class StudentResponse(StudentInDBBase):
 # 6. Internal / DB Processing
 #
 class StudentInDB(StudentInDBBase):
-    """
-    Schema fully representing the database record internally.
-    """
+    """Schema fully representing the database record internally."""
     pass

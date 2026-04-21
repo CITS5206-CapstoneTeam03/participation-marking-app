@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class WorkshopBase(BaseModel):
     """Shared properties across most Workshop-related schemas."""
     workshop_name: str = Field(..., max_length=100)
-    tutor_user_id: str = Field(..., max_length=50)
+    tutor_user_id: Optional[str] = Field(None, max_length=50)
     is_active: bool = True
 
 
@@ -27,7 +27,7 @@ class WorkshopCreate(WorkshopBase):
 #
 class WorkshopUpdate(BaseModel):
     """
-    Properties that can be updated via API. 
+    Properties that can be updated via API.
     All fields are optional to support partial updates (PATCH methodology).
     """
     workshop_name: Optional[str] = Field(None, max_length=100)
@@ -36,7 +36,7 @@ class WorkshopUpdate(BaseModel):
 
 
 #
-# 4. Shared DB Properties 
+# 4. Shared DB Properties
 #
 class WorkshopInDBBase(WorkshopBase):
     """Base schema for data returned from the database."""
@@ -44,7 +44,6 @@ class WorkshopInDBBase(WorkshopBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    # Pydantic V2 configuration to allow parsing from SQLAlchemy models
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -52,9 +51,7 @@ class WorkshopInDBBase(WorkshopBase):
 # 5. HTTP GET (Response)
 #
 class WorkshopResponse(WorkshopInDBBase):
-    """
-    Schema used for API responses. 
-    """
+    """Schema used for API responses."""
     pass
 
 
@@ -62,7 +59,5 @@ class WorkshopResponse(WorkshopInDBBase):
 # 6. Internal / DB Processing
 #
 class WorkshopInDB(WorkshopInDBBase):
-    """
-    Schema fully representing the database record internally.
-    """
+    """Schema fully representing the database record internally."""
     pass

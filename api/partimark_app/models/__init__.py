@@ -1,12 +1,21 @@
-from .users import User
-from .marks import ParticipationMark
-from .students import Student
+from .users import User, UserRole
+from .students import Student, StudentStatus
 from .workshops import Workshop
+from .enabled_weeks import EnabledWeek
+from .system_config import SystemConfig
+from .student_workshop_memberships import StudentWorkshopMembership
+from .marks import ParticipationMark
+from .audit_logs import AuditLog
 
-# Eagerly load all models so that SQLAlchemy can establish relationships correctly
 __all__ = [
     "User",
-    "ParticipationMark",
+    "UserRole",
     "Student",
-    "Workshop"
+    "StudentStatus",
+    "Workshop",
+    "EnabledWeek",
+    "SystemConfig",
+    "StudentWorkshopMembership",
+    "ParticipationMark",
+    "AuditLog",
 ]

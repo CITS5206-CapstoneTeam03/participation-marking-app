@@ -1,6 +1,6 @@
 import pytest
 from sqlalchemy.orm import Session
-from crud.crud_workshops import ( #type: ignore
+from partimark_app.crud.crud_workshops import ( #type: ignore
     create_workshop, 
     get_workshop, 
     get_workshop_by_name, 

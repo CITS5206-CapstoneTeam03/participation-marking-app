@@ -1,6 +1,6 @@
 import pytest
 from sqlalchemy.orm import Session
-from crud.crud_students import ( #type: ignore
+from partimark_app.crud.crud_students import ( #type: ignore
     create_student, 
     get_student, 
     get_student_by_email, 

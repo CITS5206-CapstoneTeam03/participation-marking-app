@@ -1,5 +1,5 @@
 from sqladmin import ModelView
-from models.users import User
+from ..models.users import User
 
 class UserAdmin(ModelView, model=User):
     # These are the columns from the User model that will be shown in the table

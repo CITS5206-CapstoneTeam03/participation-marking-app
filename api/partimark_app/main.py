@@ -2,11 +2,11 @@ from fastapi import Depends, FastAPI, APIRouter, HTTPException
 from sqlalchemy.orm import Session
 from sqladmin import Admin
 
-from db.db import get_db, engine
-from models.users import User
-from admin.views import UserAdmin
-from api_version.v1.api import api_router
-from services.logic_app.logicApp import router as logic_router
+from .db.db import get_db, engine
+from .models.users import User
+from .admin.views import UserAdmin
+from .api_version.v1.api import api_router
+from .services.logic_app.logicApp import router as logic_router
 
 # ==========================================
 # 1. Swagger UI Metadata Best Practices

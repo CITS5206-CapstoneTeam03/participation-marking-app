@@ -1,8 +1,5 @@
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-
 from alembic import context
 
 # this is the Alembic Config object, which provides
@@ -17,15 +14,14 @@ if config.config_file_name is not None:
 import os
 import sys
 
-# Add the root /api directory to python path
+# Add the /api directory to the Python path so `partimark_app` can be imported as a package.
 api_dir = os.path.dirname(os.path.dirname(__file__))
-sys.path.insert(0, api_dir)
-# Add /api/partimark_app to python path because the code expects to be run from there
-sys.path.insert(0, os.path.join(api_dir, "partimark_app"))
+if api_dir not in sys.path:
+    sys.path.insert(0, api_dir)
 
-from db.db import engine, Base  # type: ignore
-from core.config import settings  # type: ignore
-import models  # type: ignore # Ensures all models are loaded
+from partimark_app.db.db import engine, Base  # type: ignore
+from partimark_app.core.config import settings  # type: ignore
+import partimark_app.models  # type: ignore  # Ensures all models are loaded
 
 # add your model's MetaData object here
 # for 'autogenerate' support
