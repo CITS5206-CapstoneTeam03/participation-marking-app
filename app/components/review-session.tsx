@@ -139,8 +139,8 @@ export function ReviewSession({ students, weekId, weekLabel }: ReviewSessionProp
           </thead>
           <tbody>
             {sorted.map((student) => {
-              const score = weekMarks[student.id] ?? null;
-              const isMarked = score !== null;
+              const isMarked = weekMarks[student.id] !== undefined;
+              const score = isMarked ? (weekMarks[student.id] as Score) : null;
 
               return (
                 <tr key={student.id}>
