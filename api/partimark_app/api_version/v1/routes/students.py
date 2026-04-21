@@ -1,95 +1,146 @@
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from db.db import get_db
-from schemas.students import StudentCreate, StudentResponse, StudentUpdate
-from crud import crud_students as crud
+from ....db.db import get_db
+from ....schemas.students import StudentCreate, StudentResponse, StudentUpdate
+from ....crud import crud_students as crud_students
+from ....crud import crud_student_workshop_memberships as crud_memberships
+from ....crud import crud_workshops as crud_workshops
 
 router = APIRouter()
 
-# Create a new student
+
+class MoveStudentRequest(BaseModel):
+    target_workshop_id: int
+    created_by_user_id: Optional[str] = Field(None, max_length=50)
+
+
 @router.post("/", response_model=StudentResponse, status_code=status.HTTP_201_CREATED)
 def create_student(student_in: StudentCreate, db: Session = Depends(get_db)):
-    # 1. Check if student already exists
-    existing_student = crud.get_student(db, student_id=student_in.student_id)
+    existing_student = crud_students.get_student(db, student_id=student_in.student_id)
     if existing_student:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Student with this ID already exists."
+            detail="Student with this ID already exists.",
         )
 
-    # 2. Extract data 
+    existing_email = crud_students.get_student_by_email(db, email=student_in.email)
+    if existing_email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Student with this email already exists.",
+        )
+
     student_data = student_in.model_dump()
-    
-    # 3. Save to database
-    new_student = crud.create_student(db, student_data=student_data)
-    
-    # 4. Return new student
+    new_student = crud_students.create_student(db, student_data=student_data)
     return new_student
 
 
-# Get all students
 @router.get("/", response_model=List[StudentResponse])
 def get_students(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    """Retrieve all students with pagination setup."""
-    return crud.get_students(db, skip=skip, limit=limit)
+    return crud_students.get_students(db, skip=skip, limit=limit)
 
 
-# Get a specific student
 @router.get("/{student_id}", response_model=StudentResponse)
 def get_student(student_id: str, db: Session = Depends(get_db)):
-    """Retrieve a specific student by their ID."""
-    student = crud.get_student(db, student_id=student_id)
+    student = crud_students.get_student(db, student_id=student_id)
     if not student:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student not found."
+            detail="Student not found.",
         )
     return student
 
 
-# Update a specific student
 @router.patch("/{student_id}", response_model=StudentResponse)
-def update_student(student_id: str, student_update: StudentUpdate, db: Session = Depends(get_db)):
-    """
-    Update student data.
-    Uses PATCH methodology (only updates fields explicitly provided).
-    """
-    student = crud.get_student(db, student_id=student_id)
+def update_student(
+    student_id: str,
+    student_update: StudentUpdate,
+    db: Session = Depends(get_db),
+):
+    student = crud_students.get_student(db, student_id=student_id)
     if not student:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student not found."
+            detail="Student not found.",
         )
-    
-    # exclude_unset=True makes sure we ONLY update what the client actually sent
+
     update_data = student_update.model_dump(exclude_unset=True)
 
-    # Verify new email doesn't conflict with another student if they are changing it
     if "email" in update_data and update_data["email"] != student.email:
-        existing_email = crud.get_student_by_email(db, email=update_data["email"])
+        existing_email = crud_students.get_student_by_email(db, email=update_data["email"])
         if existing_email:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Student with this email already exists."
+                detail="Student with this email already exists.",
             )
-        
-    updated_student = crud.update_student(db, db_student=student, update_data=update_data)
+
+    updated_student = crud_students.update_student(
+        db, db_student=student, update_data=update_data
+    )
     return updated_student
 
 
-# Delete a specific student
-@router.delete("/{student_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_student(student_id: str, db: Session = Depends(get_db)):
-    """Delete a student from the system."""
-    student = crud.get_student(db, student_id=student_id)
+@router.patch("/{student_id}/withdraw", response_model=StudentResponse)
+def withdraw_student(student_id: str, db: Session = Depends(get_db)):
+    student = crud_students.get_student(db, student_id=student_id)
     if not student:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student not found."
+            detail="Student not found.",
         )
-    
-    crud.delete_student(db, db_student=student)
+
+    withdrawn_student = crud_students.withdraw_student(db, db_student=student)
+    return withdrawn_student
+
+
+@router.post("/{student_id}/move", status_code=status.HTTP_200_OK)
+def move_student(
+    student_id: str,
+    move_request: MoveStudentRequest,
+    db: Session = Depends(get_db),
+):
+    student = crud_students.get_student(db, student_id=student_id)
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student not found.",
+        )
+
+    target_workshop = crud_workshops.get_workshop(db, move_request.target_workshop_id)
+    if not target_workshop:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Target workshop not found.",
+        )
+
+    new_membership = crud_memberships.move_student_to_workshop(
+        db=db,
+        student_id=student_id,
+        target_workshop_id=move_request.target_workshop_id,
+        created_by_user_id=move_request.created_by_user_id,
+    )
+
+    return {
+        "message": "Student moved successfully.",
+        "membership_id": new_membership.membership_id,
+        "student_id": new_membership.student_id,
+        "workshop_id": new_membership.workshop_id,
+        "is_current": new_membership.is_current,
+    }
+
+
+@router.delete("/{student_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_student(student_id: str, db: Session = Depends(get_db)):
+    student = crud_students.get_student(db, student_id=student_id)
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student not found.",
+        )
+
+    crud_students.delete_student(db, db_student=student)
     return None

@@ -9,7 +9,7 @@ from sqlalchemy.pool import StaticPool
 # Add the app directory to the system path to allow importing modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "partimark_app")))
 
-from db.db import Base, get_db  # type: ignore # noqa: E402
+from partimark_app.db.db import Base, get_db  # type: ignore # noqa: E402
 from main import app  # type: ignore # noqa: E402
 
 # Use an in-memory SQLite database for testing to ensure isolation and speed

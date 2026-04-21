@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy.orm import Session
-from models.users import UserRole # type: ignore
-from crud.crud_users import create_user, get_user, get_user_by_email, get_users, update_user, delete_user # type: ignore
+from partimark_app.models.users import UserRole # type: ignore
+from partimark_app.crud.crud_users import create_user, get_user, get_user_by_email, get_users, update_user, delete_user # type: ignore
  
 @pytest.fixture
 def mock_user_data():

@@ -27,9 +27,11 @@ def generate_lms_export(marks: List, assessment_column_name: str) -> str:
         first_name = getattr(student, "first_name", "") if student else ""
         last_name = getattr(student, "last_name", "") if student else ""
         
-        # Client note: Column F ("Availability") uses "yes" or "no".
-        is_active = getattr(student, "is_active", True) if student else True
-        availability_str = "Yes" if is_active else "No"
+        # Client note: Column F ("Availability") uses "Yes" or "No".
+        # Schema V3 stores student availability via `status` = active / withdrawn.
+        student_status = getattr(student, "status", "active") if student else "active"
+        status_value = getattr(student_status, "value", student_status)
+        availability_str = "Yes" if status_value == "active" else "No"
         
         row = {
             "Last Name": last_name,
