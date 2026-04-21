@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, notFound } from "next/navigation";
 import { TutorShell } from "../../../components/tutor-shell";
 import { ReviewSession } from "../../../components/review-session";
+// TODO(T-API): replace getWeekById with GET /weeks/:weekId API call once backend is integrated
 import { getWeekById } from "../../../data/mock-data";
 import type { StudentMark } from "../../../data/mock-data";
 import { useAppContext } from "../../../context/app-context";
@@ -20,6 +21,7 @@ export default function ReviewPage() {
   }
 
   const rosterStudents = activeWorkshopId ? (workshopStudents[activeWorkshopId] ?? []) : [];
+  // TODO(T-API): populate photoUrl, team, notes, and previousAverage from the student profile API
   const students: StudentMark[] = rosterStudents.map((s) => ({
     id: s.studentId,
     name: `${s.preferredName ?? s.firstName} ${s.lastName}`,

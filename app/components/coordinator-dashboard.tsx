@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+// TODO(T-API): replace participationWeeks with GET /weeks API response once backend is integrated
 import { participationWeeks } from "../data/mock-data";
 import { useAppContext } from "../context/app-context";
 
@@ -13,6 +14,7 @@ export function CoordinatorDashboard() {
     .filter((week): week is (typeof participationWeeks)[number] => Boolean(week));
 
   const isUnitConfigured = enabledWeeks.length > 0;
+  // TODO(T-API): derive the active/current week from the backend rather than assuming the last enabled week
   const activeWeekId = enabledWeeks[enabledWeeks.length - 1]?.id;
   const markedThisWeek = activeWeekId ? Object.keys(sessionMarks[activeWeekId] ?? {}).length : 0;
 

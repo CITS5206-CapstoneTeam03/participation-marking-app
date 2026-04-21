@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useAppContext } from "../context/app-context";
+// TODO(T-API): replace participationWeeks with GET /weeks API response once backend is integrated
 import { participationWeeks } from "../data/mock-data";
 
 type WeekDropdownProps = {

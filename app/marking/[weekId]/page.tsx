@@ -5,6 +5,7 @@ import { useParams, notFound } from "next/navigation";
 import { TutorShell } from "../../components/tutor-shell";
 import { MarkingSession } from "../../components/marking-session";
 import { WeekDropdown } from "../../components/week-dropdown";
+// TODO(T-API): replace getWeekById with GET /weeks/:weekId API call once backend is integrated
 import { getWeekById } from "../../data/mock-data";
 import type { StudentMark } from "../../data/mock-data";
 import { useAppContext } from "../../context/app-context";
@@ -21,6 +22,7 @@ export default function WeekMarkingPage() {
   }
 
   const rosterStudents = activeWorkshopId ? (workshopStudents[activeWorkshopId] ?? []) : [];
+  // TODO(T-API): populate photoUrl, team, notes, and previousAverage from the student profile API
   const students: StudentMark[] = rosterStudents.map((s) => ({
     id: s.studentId,
     name: `${s.preferredName ?? s.firstName} ${s.lastName}`,

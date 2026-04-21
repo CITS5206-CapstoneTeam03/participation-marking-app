@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TutorShell } from "../components/tutor-shell";
+// TODO(T-API): replace participationWeeks with GET /weeks API response once backend is integrated
 import { participationWeeks } from "../data/mock-data";
 import { useAppContext } from "../context/app-context";
 
