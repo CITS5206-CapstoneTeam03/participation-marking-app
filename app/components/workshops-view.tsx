@@ -85,7 +85,7 @@ export function WorkshopsView() {
       const progress = totalPossibleMarks > 0 ? (totalMarksRecorded / totalPossibleMarks) * 100 : 0;
 
       const avgScore = totalMarksRecorded > 0
-        ? markEntries.reduce((sum, score) => sum + score, 0) / totalMarksRecorded
+        ? markEntries.reduce<number>((sum, score) => sum + score, 0) / totalMarksRecorded
         : 0;
 
       return {
