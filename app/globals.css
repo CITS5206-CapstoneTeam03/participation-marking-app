@@ -1312,6 +1312,10 @@ button {
   .review-actions {
     flex-direction: column;
   }
+
+  .review-actions .marking-nav-btn {
+    width: 100%;
+  }
 }
 
 /* ─── Dashboards ─────────────────────────────────────────── */
