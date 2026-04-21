@@ -1,8 +1,7 @@
+name: Manual Backend CI
+
 on:
-  push:
-    branches: all
-  pull_request:
-    branches: all
+  workflow_dispatch:
 
 jobs:
   test:
