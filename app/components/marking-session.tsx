@@ -123,7 +123,7 @@ export function MarkingSession({ students, weekId, weekLabel }: MarkingSessionPr
         onSelect={handleSelect}
       />
 
-     <nav className="marking-nav" aria-label="Student navigation">
+      <nav className="marking-nav" aria-label="Student navigation">
         <button
           type="button"
           className="marking-nav-btn"
