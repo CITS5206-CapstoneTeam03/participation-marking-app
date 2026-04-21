@@ -52,8 +52,22 @@ SWA CLI will create a local address (for example `http://localhost:4280`) where:
 - **Frontend** is served from the Next.js dev server.
 - **`/api` routes** are proxied to the FastAPI backend running at `http://localhost:8000`.
 
+## Manually Running CI/CD (GitHub Actions)
+
+The website is configured for automated deployment, but automatic deployment on push may be temporarily disabled. You can manually trigger deployments for the Frontend and Backend using GitHub Actions:
+
+1. Go to the **Actions** tab on the GitHub repository page.
+2. In the left sidebar (under Workflows), select the workflow you want to deploy:
+   - **Azure Static Web Apps CI/CD**: for the Frontend.
+   - **Build and deploy Python app to Azure Web App - partimark**: for the Backend (FastAPI).
+3. Click the gray **Run workflow** button on the right side of the screen.
+4. Select the branch you want to deploy (usually `main`) and click the green **Run workflow** button to start the deployment.
+
 ## Localhost
 ### http://localhost:4280
 
 ## FastAPI Swagger
 ### http://localhost:8000/docs
+
+## Live Production
+### https://partimark.app
