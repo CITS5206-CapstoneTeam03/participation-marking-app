@@ -33,7 +33,7 @@ export function ReviewSession({ students, weekId, weekLabel }: ReviewSessionProp
   const weekMarks = sessionMarks[weekId] ?? {};
 
   const totalStudents = students.length;
-  const markedCount = Object.keys(weekMarks).length;
+  const markedCount = students.filter((student) => weekMarks[student.id] !== undefined).length;
   const unmarkedCount = totalStudents - markedCount;
   const canSubmit = unmarkedCount === 0;
 
