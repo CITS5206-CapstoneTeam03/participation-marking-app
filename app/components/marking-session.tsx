@@ -70,10 +70,12 @@ export function MarkingSession({ students, weekId, weekLabel }: MarkingSessionPr
   }
 
   function goToPrevious() {
+    clearAutoAdvanceTimeout();
     setCurrentIndex((i) => Math.max(0, i - 1));
   }
-
+  
   function goToNext() {
+    clearAutoAdvanceTimeout();
     setCurrentIndex((i) => Math.min(students.length - 1, i + 1));
   }
 
