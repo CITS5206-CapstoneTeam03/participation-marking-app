@@ -24,7 +24,7 @@ apiClient.interceptors.response.use(
         ? details.detail
         : error.message || `Request failed with status ${status}`;
 
-    return Promise.reject(new ApiError(message, status));
+    return Promise.reject(new ApiError(message, status, details));
   },
 );
 
