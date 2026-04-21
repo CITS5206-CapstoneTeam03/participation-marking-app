@@ -18,6 +18,9 @@ ENV/
 .env.*.local
 .venv
 
+# TypeScript build cache
+tsconfig.tsbuildinfo
+
 # Editor
 .vscode/
 .idea/
