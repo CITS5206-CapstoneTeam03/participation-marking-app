@@ -58,15 +58,16 @@ export function MarkingSession({ students, weekId, weekLabel }: MarkingSessionPr
     if (!currentStudent) return;
   
     setMark(weekId, currentStudent.id, score);
+    clearAutoAdvanceTimeout();
   
-    if (!isLastStudent) {
-      clearAutoAdvanceTimeout();
-  
-      autoAdvanceTimeoutRef.current = setTimeout(() => {
+    autoAdvanceTimeoutRef.current = setTimeout(() => {
+      if (isLastStudent) {
+        router.push(`/marking/${weekId}/review`);
+      } else {
         goToNext();
-        autoAdvanceTimeoutRef.current = null;
-      }, AUTO_ADVANCE_DELAY_MS);
-    }
+      }
+      autoAdvanceTimeoutRef.current = null;
+    }, AUTO_ADVANCE_DELAY_MS);
   }
 
   function goToPrevious() {
