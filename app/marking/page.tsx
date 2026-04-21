@@ -1,23 +1,42 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { TutorShell } from "../components/tutor-shell";
-import { participationWeeks, getMarksForWeek } from "../data/mock-data";
+// TODO(T-API): replace participationWeeks with GET /weeks API response once backend is integrated
+import { participationWeeks } from "../data/mock-data";
 import { useAppContext } from "../context/app-context";
 
 export default function MarkingPage() {
-  const { configWeeks, getWeekMarkedCount } = useAppContext();
+  const router = useRouter();
+  const { configWeeks, workshops, workshopStudents, currentUserName, sessionMarks, setActiveWorkshopId } = useAppContext();
 
   // Only show weeks the UC has enabled that also have a corresponding participationWeek entry
-  const enabledIds = new Set(configWeeks.filter((w) => w.enabled).map((w) => w.id));
-  const visibleWeeks = participationWeeks.filter((w) => enabledIds.has(w.id));
+  const enabledIds = new Set(configWeeks.filter((w) => w.enabled && !w.locked).map((w) => w.id));
+  const assignedWorkshops = useMemo(
+    () => workshops.filter((workshop) => workshop.tutorName && workshop.tutorName === currentUserName),
+    [workshops, currentUserName],
+  );
+  const [selectedWorkshopId, setSelectedWorkshopId] = useState<string | null>(null);
+
+  const selectedWorkshop = assignedWorkshops.find((workshop) => workshop.id === selectedWorkshopId) ?? assignedWorkshops[0];
+
+  const visibleWeeks = selectedWorkshop
+    ? participationWeeks.filter((week) => enabledIds.has(week.id))
+    : [];
+  const selectedWorkshopStudentCount = selectedWorkshop ? (workshopStudents[selectedWorkshop.id]?.length ?? 0) : 0;
+  const selectedWorkshopStudentIds = useMemo(
+    () => new Set((selectedWorkshop ? (workshopStudents[selectedWorkshop.id] ?? []) : []).map((student) => student.studentId)),
+    [selectedWorkshop, workshopStudents],
+  );
 
   return (
     <TutorShell>
       <header className="prototype-header" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px" }}>
         <div>
           <h1>Mark Participation</h1>
-          <p style={{ marginTop: "6px" }}>Select a week to begin marking</p>
+          <p style={{ marginTop: "6px" }}>Select workshop and week to begin marking</p>
         </div>
         <Link
           href="/"
@@ -40,6 +59,35 @@ export default function MarkingPage() {
 
       <section className="real-page-panel">
         <div className="week-select-panel">
+          <h2 className="week-select-title" style={{ marginBottom: "12px" }}>Select Workshop</h2>
+          {assignedWorkshops.length === 0 ? (
+            <p style={{ color: "var(--ink-soft)", padding: "8px 0 20px" }}>
+              No workshop assigned to your tutor view yet. Ask the Unit Coordinator to assign you.
+            </p>
+          ) : (
+            <div className="dashboard-list" style={{ marginBottom: "18px" }}>
+              {assignedWorkshops.map((workshop) => (
+                <button
+                  key={workshop.id}
+                  type="button"
+                  className="dashboard-list-row"
+                  onClick={() => setSelectedWorkshopId(workshop.id)}
+                  style={{
+                    width: "100%",
+                    textAlign: "left",
+                    borderColor: selectedWorkshop?.id === workshop.id ? "#a9b7ff" : "var(--panel-border)",
+                    background: selectedWorkshop?.id === workshop.id ? "#eef2ff" : "#f7f9fc",
+                  }}
+                >
+                  <div>
+                    <p className="dashboard-list-title">{workshop.name}</p>
+                    <p className="dashboard-list-sub">{workshopStudents[workshop.id]?.length ?? 0} students</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Panel header */}
           <div className="week-select-header">
             <div className="week-select-icon" aria-hidden="true">
@@ -54,7 +102,7 @@ export default function MarkingPage() {
             <div>
               <h2 className="week-select-title">Select Week to Mark</h2>
               <p className="week-select-subtitle">
-                Showing all {visibleWeeks.length} week{visibleWeeks.length !== 1 ? "s" : ""} configured by Unit Coordinator
+                Showing {visibleWeeks.length} week{visibleWeeks.length !== 1 ? "s" : ""} for {selectedWorkshop?.name ?? "assigned workshop"}
               </p>
             </div>
           </div>
@@ -67,15 +115,21 @@ export default function MarkingPage() {
           ) : (
             <div className="week-grid">
               {visibleWeeks.map((week) => {
-                const total = getMarksForWeek(week.id).length;
-                const marked = getWeekMarkedCount(week.id);
+                const total = selectedWorkshopStudentCount;
+                const marked = Object.keys(sessionMarks[week.id] ?? {}).filter((sid) =>
+                  selectedWorkshopStudentIds.has(sid),
+                ).length;
                 const isComplete = total > 0 && marked >= total;
 
                 return (
-                  <Link
+                  <button
                     key={week.id}
-                    href={`/marking/${week.id}`}
+                    type="button"
                     className={`week-card${isComplete ? " week-card--complete" : ""}`}
+                    onClick={() => {
+                      if (selectedWorkshop) setActiveWorkshopId(selectedWorkshop.id);
+                      router.push(`/marking/${week.id}`);
+                    }}
                   >
                     {isComplete && (
                       <span className="week-card-check" aria-label="Complete">
@@ -89,7 +143,7 @@ export default function MarkingPage() {
                     <p className="week-card-number">{week.weekNumber}</p>
                     <p className="week-card-count">{marked} / {total} marked</p>
                     {isComplete && <p className="week-card-complete-badge">Complete</p>}
-                  </Link>
+                  </button>
                 );
               })}
             </div>
