@@ -11,6 +11,7 @@ class StudentFormData(BaseModel):
     last_name: str
     avatar_url: str
 
+#TO DO: Implement logic to update database with the received data
 @router.post("/webhook/forms")
 async def handle_forms_webhook(data: StudentFormData):
     # Process the received data here

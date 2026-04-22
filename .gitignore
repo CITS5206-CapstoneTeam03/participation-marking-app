@@ -4,13 +4,18 @@ node_modules/
 out/
 
 # API
-api/__pycache__/*
+api/.env
+**/__pycache__/
+*.py[cod]
+*$py.class
 
 # Virtual Environment
 venv/
 env/
 ENV/
 .env
+.env.local
+.env.*.local
 .venv
 
 # TypeScript build cache

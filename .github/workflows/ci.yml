@@ -1,0 +1,35 @@
+name: Manual Backend CI
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          python -m venv antenv
+          source antenv/bin/activate
+          cd api
+          pip install -r requirements.txt
+      # TODO: Implement migration check against the current version of the 'main' branch
+      # - name: Check Database Migrations
+      #   run: |
+      #     source antenv/bin/activate
+      #     cd api
+      #     alembic current
+      #     alembic upgrade head
+      
+      - name: Run tests
+        run: |
+          source antenv/bin/activate
+          cd api
+          pytest

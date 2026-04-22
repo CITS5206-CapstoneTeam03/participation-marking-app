@@ -1,23 +1,37 @@
-import Link from "next/link";
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { CoordinatorDashboard } from "./components/coordinator-dashboard";
+import { CoordinatorShell } from "./components/coordinator-shell";
+import { TutorDashboard } from "./components/tutor-dashboard";
 import { TutorShell } from "./components/tutor-shell";
+import { useAppContext } from "./context/app-context";
 
 export default function Home() {
+  const router = useRouter();
+  const { isAuthLoading, isAuthenticated, viewRole } = useAppContext();
+
+  useEffect(() => {
+    if (isAuthLoading) return;
+    if (!isAuthenticated) router.replace("/login");
+  }, [isAuthLoading, isAuthenticated, router]);
+
+  if (isAuthLoading || !isAuthenticated) {
+    return null;
+  }
+
+  if (viewRole === "coordinator") {
+    return (
+      <CoordinatorShell>
+        <CoordinatorDashboard />
+      </CoordinatorShell>
+    );
+  }
+
   return (
     <TutorShell>
-      <header className="prototype-header">
-        <h1>Mark Participation</h1>
-        <p>Select the workshop assigned to you before choosing the week to mark.</p>
-      </header>
-
-      <section className="real-page-panel">
-        <article className="prototype-card workshop-picker-card">
-          <h2 className="section-card-title">Select Workshop</h2>
-          <Link href="/marking" className="workshop-option">
-            <span className="workshop-option-title">Workshop 01</span>
-            <span className="workshop-option-subtitle">35 students</span>
-          </Link>
-        </article>
-      </section>
+      <TutorDashboard />
     </TutorShell>
   );
 }

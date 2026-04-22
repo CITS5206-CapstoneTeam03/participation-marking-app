@@ -2,27 +2,50 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
+import { useEffect } from "react";
 import { useAppContext } from "../context/app-context";
 
 // Navigation items visible to the Tutor role (FR-1.4 access control)
 const navItems = [
-  { href: "/", label: "Dashboard", exact: true },
-  { href: "/marking", label: "Mark Participation", exact: false },
+  {
+    href: "/",
+    label: "Dashboard",
+    exact: true,
+    icon: (active: boolean) => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" stroke={active ? "#3f5efb" : "#4b5d75"} strokeWidth="2" />
+        <rect x="13.5" y="3.5" width="7" height="7" rx="1.5" stroke={active ? "#3f5efb" : "#4b5d75"} strokeWidth="2" />
+        <rect x="3.5" y="13.5" width="7" height="7" rx="1.5" stroke={active ? "#3f5efb" : "#4b5d75"} strokeWidth="2" />
+        <rect x="13.5" y="13.5" width="7" height="7" rx="1.5" stroke={active ? "#3f5efb" : "#4b5d75"} strokeWidth="2" />
+      </svg>
+    ),
+  },
+  {
+    href: "/marking",
+    label: "Mark Participation",
+    exact: false,
+    icon: (active: boolean) => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="3" y="3" width="18" height="18" rx="2.5" stroke={active ? "#3f5efb" : "#4b5d75"} strokeWidth="2" />
+        <path d="M8 12.5l2.5 2.5L16 9.5" stroke={active ? "#3f5efb" : "#4b5d75"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    href: "/analytics",
+    label: "Analytics",
+    exact: false,
+    icon: (active: boolean) => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <line x1="5" y1="20" x2="5" y2="10" stroke={active ? "#3f5efb" : "#4b5d75"} strokeWidth="2.2" strokeLinecap="round" />
+        <line x1="12" y1="20" x2="12" y2="5" stroke={active ? "#3f5efb" : "#4b5d75"} strokeWidth="2.2" strokeLinecap="round" />
+        <line x1="19" y1="20" x2="19" y2="13" stroke={active ? "#3f5efb" : "#4b5d75"} strokeWidth="2.2" strokeLinecap="round" />
+      </svg>
+    ),
+  },
 ] as const;
-
-function NavIcon({ active }: { active: boolean }) {
-  const colour = active ? "#3f5efb" : "#4b5d75";
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" stroke={colour} strokeWidth="2" />
-      <rect x="13.5" y="3.5" width="7" height="7" rx="1.5" stroke={colour} strokeWidth="2" />
-      <rect x="3.5" y="13.5" width="7" height="7" rx="1.5" stroke={colour} strokeWidth="2" />
-      <rect x="13.5" y="13.5" width="7" height="7" rx="1.5" stroke={colour} strokeWidth="2" />
-    </svg>
-  );
-}
 
 type TutorShellProps = {
   children: ReactNode;
@@ -33,8 +56,27 @@ type TutorShellProps = {
  * Extracted from page.tsx to avoid duplication across routes.
  */
 export function TutorShell({ children }: TutorShellProps) {
+  const router = useRouter();
   const pathname = usePathname();
-  const { viewRole, setViewRole } = useAppContext();
+  const { isAuthLoading, isAuthenticated, authRole, currentUserName, logout, setViewRole } = useAppContext();
+
+  useEffect(() => {
+    if (isAuthLoading) return;
+    if (!isAuthenticated) router.replace("/login");
+  }, [isAuthLoading, isAuthenticated, router]);
+
+  if (isAuthLoading || !isAuthenticated) return null;
+
+  const handleSignOut = () => {
+    logout();
+    router.push("/login");
+  };
+
+  const handleSwitchToCoordinator = () => {
+    if (authRole !== "coordinator") return;
+    setViewRole("coordinator");
+    router.push("/");
+  };
 
   return (
     <div className="prototype-shell">
@@ -62,37 +104,48 @@ export function TutorShell({ children }: TutorShellProps) {
                 className={`prototype-nav-link ${isActive ? "active" : ""}`}
                 aria-current={isActive ? "page" : undefined}
               >
-                <NavIcon active={isActive} />
+                {item.icon(isActive)}
                 <span>{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
-        {/* Role switcher + user info */}
+        {/* Tutor profile */}
         <div className="prototype-sidebar-footer">
-          <p className="mb-3 text-sm font-medium text-[#5a6a81]">View Mode</p>
-          <div className="mode-toggle">
-            <button
-              type="button"
-              className={`mode-chip${viewRole === "coordinator" ? " active" : ""}`}
-              onClick={() => setViewRole("coordinator")}
-            >
-              Coordinator
-            </button>
-            <button
-              type="button"
-              className={`mode-chip${viewRole === "tutor" ? " active" : ""}`}
-              onClick={() => setViewRole("tutor")}
-            >
-              Tutor
-            </button>
-          </div>
+          {authRole === "coordinator" && (
+            <>
+              <p className="mb-3 text-sm font-medium text-[#5a6a81]">View Mode</p>
+              <div className="mode-toggle">
+                <button
+                  type="button"
+                  className="mode-chip"
+                  onClick={handleSwitchToCoordinator}
+                >
+                  Coordinator
+                </button>
+                <button
+                  type="button"
+                  className="mode-chip active"
+                  onClick={() => {}}
+                >
+                  Tutor
+                </button>
+              </div>
+            </>
+          )}
           <div className="mt-4">
-            <p className="text-[15px] font-semibold text-[#172033]">Dr. Joachim Strand</p>
-            <p className="text-sm text-[#708097]">Coordinator</p>
-            <p className="mt-1 text-sm font-medium text-[#3f5efb]">Viewing as: {viewRole}</p>
+            <p className="text-[15px] font-semibold text-[#172033]">{currentUserName || "Tutor"}</p>
+            <p className="text-sm text-[#708097]">Tutor</p>
           </div>
+          <button type="button" className="tutor-signout-btn" onClick={handleSignOut}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <path d="M10 17l5-5-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M15 12H3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            <span>Sign Out</span>
+          </button>
         </div>
       </aside>
 
