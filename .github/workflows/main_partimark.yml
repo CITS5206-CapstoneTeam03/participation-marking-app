@@ -71,9 +71,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install Python dependencies
-        run: |
-          cd api
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
 
       - name: Run Alembic database migrations
         env:
@@ -81,10 +79,8 @@ jobs:
           DB_PASS: ${{ secrets.DB_PASS }}
           DB_HOST: ${{ secrets.DB_HOST }}
           DB_NAME: ${{ secrets.DB_NAME }}
-          SSL_CA: ${{ github.workspace }}/api/partimark_app/certs/DigiCertGlobalRootCA.crt.pem
-        run: |
-          cd api
-          python -m alembic upgrade head
+          SSL_CA: ${{ github.workspace }}/partimark_app/certs/DigiCertGlobalRootCA.crt.pem
+        run: python -m alembic upgrade head
       # ──────────────────────────────────────────────────────────────────
       
       - name: Login to Azure
