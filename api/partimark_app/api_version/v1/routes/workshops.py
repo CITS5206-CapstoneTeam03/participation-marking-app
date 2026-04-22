@@ -1,0 +1,104 @@
+from typing import List
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+
+from ....db.db import get_db
+from ....schemas.workshops import WorkshopCreate, WorkshopResponse, WorkshopUpdate
+from ....crud import crud_workshops as crud_workshops
+from ....crud import crud_users as crud_users
+
+router = APIRouter()
+
+
+@router.post("/", response_model=WorkshopResponse, status_code=status.HTTP_201_CREATED)
+def create_workshop(workshop_in: WorkshopCreate, db: Session = Depends(get_db)):
+    existing_workshop = crud_workshops.get_workshop_by_name(
+        db, workshop_name=workshop_in.workshop_name
+    )
+    if existing_workshop:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Workshop with this name already exists.",
+        )
+
+    workshop_data = workshop_in.model_dump()
+
+    if workshop_data.get("tutor_user_id"):
+        tutor = crud_users.get_user(db, workshop_data["tutor_user_id"])
+        if not tutor:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Assigned tutor_user_id does not exist.",
+            )
+
+    new_workshop = crud_workshops.create_workshop(db, workshop_data=workshop_data)
+    return new_workshop
+
+
+@router.get("/", response_model=List[WorkshopResponse])
+def get_workshops(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    return crud_workshops.get_workshops(db, skip=skip, limit=limit)
+
+
+@router.get("/{workshop_id}", response_model=WorkshopResponse)
+def get_workshop(workshop_id: int, db: Session = Depends(get_db)):
+    workshop = crud_workshops.get_workshop(db, workshop_id=workshop_id)
+    if not workshop:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workshop not found.",
+        )
+    return workshop
+
+
+@router.patch("/{workshop_id}", response_model=WorkshopResponse)
+def update_workshop(
+    workshop_id: int,
+    workshop_update: WorkshopUpdate,
+    db: Session = Depends(get_db),
+):
+    workshop = crud_workshops.get_workshop(db, workshop_id=workshop_id)
+    if not workshop:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workshop not found.",
+        )
+
+    update_data = workshop_update.model_dump(exclude_unset=True)
+
+    if "workshop_name" in update_data and update_data["workshop_name"] != workshop.workshop_name:
+        existing_workshop = crud_workshops.get_workshop_by_name(
+            db, workshop_name=update_data["workshop_name"]
+        )
+        if existing_workshop:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Workshop with this name already exists.",
+            )
+
+    if "tutor_user_id" in update_data and update_data["tutor_user_id"] is not None:
+        tutor = crud_users.get_user(db, update_data["tutor_user_id"])
+        if not tutor:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Assigned tutor_user_id does not exist.",
+            )
+
+    updated_workshop = crud_workshops.update_workshop(
+        db, db_workshop=workshop, update_data=update_data
+    )
+    return updated_workshop
+
+
+@router.delete("/{workshop_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_workshop(workshop_id: int, db: Session = Depends(get_db)):
+    workshop = crud_workshops.get_workshop(db, workshop_id=workshop_id)
+    if not workshop:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workshop not found.",
+        )
+
+    crud_workshops.delete_workshop(db, db_workshop=workshop)
+    return None
