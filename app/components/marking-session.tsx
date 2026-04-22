@@ -49,10 +49,12 @@ export function MarkingSession({ students, weekId, weekLabel }: MarkingSessionPr
   
   useEffect(() => {
     return () => {
-      clearAutoAdvanceTimeout();
+      if (autoAdvanceTimeoutRef.current) {
+        clearTimeout(autoAdvanceTimeoutRef.current);
+      }
     };
   }, []);
-
+  
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   function handleSelect(score: Score) {
