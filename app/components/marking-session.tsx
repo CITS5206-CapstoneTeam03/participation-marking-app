@@ -137,7 +137,7 @@ export function MarkingSession({ students, weekId, weekLabel }: MarkingSessionPr
         >
           ‹ Previous
         </button>
-      
+
         {isLastStudent ? (
           <button
             type="button"
@@ -148,16 +148,7 @@ export function MarkingSession({ students, weekId, weekLabel }: MarkingSessionPr
             Complete
           </button>
         ) : (
-          <button
-            type="button"
-            className="marking-nav-btn"
-            disabled
-            aria-hidden="true"
-            tabIndex={-1}
-            style={{ visibility: "hidden" }}
-          >
-            Next ›
-          </button>
+          <div className="marking-nav-spacer" aria-hidden="true" />
         )}
       </nav>
     </div>
