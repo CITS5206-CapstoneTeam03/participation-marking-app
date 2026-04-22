@@ -60,6 +60,32 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: python-app
+
+      # ─── Database Migration ───────────────────────────────────────────
+      # Runs Alembic migrations against Azure Database for MySQL flexible
+      # server BEFORE the app is deployed, so the schema is ready when
+      # the new code goes live. If this step fails the deploy is aborted.
+      - name: Set up Python for migration
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: |
+          cd api
+          pip install -r requirements.txt
+
+      - name: Run Alembic database migrations
+        env:
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASS: ${{ secrets.DB_PASS }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          SSL_CA: ${{ github.workspace }}/api/partimark_app/certs/DigiCertGlobalRootCA.crt.pem
+        run: |
+          cd api
+          python -m alembic upgrade head
+      # ──────────────────────────────────────────────────────────────────
       
       - name: Login to Azure
         uses: azure/login@v2
