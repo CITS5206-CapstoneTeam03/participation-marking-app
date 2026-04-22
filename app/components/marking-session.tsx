@@ -13,6 +13,8 @@ type MarkingSessionProps = {
   weekLabel: string;
 };
 
+const AUTO_ADVANCE_DELAY_MS = 250;
+
 /**
  * Sequential single-student marking session (T-201 / FR-3.1, FR-3.2).
  *
@@ -26,7 +28,6 @@ export function MarkingSession({ students, weekId, weekLabel }: MarkingSessionPr
   const { sessionMarks, setMark } = useAppContext();
   const [currentIndex, setCurrentIndex] = useState(0);
   const router = useRouter();
-  const AUTO_ADVANCE_DELAY_MS = 250;
   const autoAdvanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isLastStudent = currentIndex === students.length - 1;
