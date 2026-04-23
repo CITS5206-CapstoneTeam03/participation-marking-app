@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MarkingCard } from "./marking-card";
 import type { Score } from "../data/mock-data";
@@ -13,22 +13,22 @@ type MarkingSessionProps = {
   weekLabel: string;
 };
 
+const AUTO_ADVANCE_DELAY_MS = 250;
+
 /**
  * Sequential single-student marking session (T-201 / FR-3.1, FR-3.2).
  *
  * Mark state is lifted to AppContext so that:
  *  - The week selection screen can show accurate "X / Y marked" counts.
  *  - The Review & Submit page can read marks without prop drilling.
- *  - T-202 (auto-advance, FR-3.3) can extend handleSelect here without
- *    touching the card component at all.
- *
- * To implement auto-advance (T-202), add after setMark:
- *   setTimeout(() => goToNext(), AUTO_ADVANCE_DELAY_MS);
+ *  - Auto-advance navigation (T-202 / FR-3.3) is handled in handleSelect
+ *    without changing the card component.
  */
 export function MarkingSession({ students, weekId, weekLabel }: MarkingSessionProps) {
   const { sessionMarks, setMark } = useAppContext();
   const [currentIndex, setCurrentIndex] = useState(0);
   const router = useRouter();
+  const autoAdvanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isLastStudent = currentIndex === students.length - 1;
 
@@ -40,19 +40,46 @@ export function MarkingSession({ students, weekId, weekLabel }: MarkingSessionPr
   const markedCount = Object.keys(weekMarks).length;
   const progressPercent = students.length > 0 ? (markedCount / students.length) * 100 : 0;
 
+  function clearAutoAdvanceTimeout() {
+    if (autoAdvanceTimeoutRef.current) {
+      clearTimeout(autoAdvanceTimeoutRef.current);
+      autoAdvanceTimeoutRef.current = null;
+    }
+  }
+  
+  useEffect(() => {
+    return () => {
+      if (autoAdvanceTimeoutRef.current) {
+        clearTimeout(autoAdvanceTimeoutRef.current);
+      }
+    };
+  }, []);
+  
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   function handleSelect(score: Score) {
     if (!currentStudent) return;
+  
     setMark(weekId, currentStudent.id, score);
-    // T-202: add auto-advance here — e.g. setTimeout(() => goToNext(), 300);
+    clearAutoAdvanceTimeout();
+  
+    autoAdvanceTimeoutRef.current = setTimeout(() => {
+      if (isLastStudent) {
+        router.push(`/marking/${weekId}/review`);
+      } else {
+        goToNext();
+      }
+      autoAdvanceTimeoutRef.current = null;
+    }, AUTO_ADVANCE_DELAY_MS);
   }
 
   function goToPrevious() {
+    clearAutoAdvanceTimeout();
     setCurrentIndex((i) => Math.max(0, i - 1));
   }
-
+  
   function goToNext() {
+    clearAutoAdvanceTimeout();
     setCurrentIndex((i) => Math.min(students.length - 1, i + 1));
   }
 
@@ -100,7 +127,6 @@ export function MarkingSession({ students, weekId, weekLabel }: MarkingSessionPr
         onSelect={handleSelect}
       />
 
-      {/* Navigation — T-202 replaces manual Next with auto-advance */}
       <nav className="marking-nav" aria-label="Student navigation">
         <button
           type="button"
@@ -122,14 +148,7 @@ export function MarkingSession({ students, weekId, weekLabel }: MarkingSessionPr
             Complete
           </button>
         ) : (
-          <button
-            type="button"
-            className="marking-nav-btn"
-            onClick={goToNext}
-            aria-label="Next student"
-          >
-            Next ›
-          </button>
+          <div className="marking-nav-spacer" aria-hidden="true" />
         )}
       </nav>
     </div>

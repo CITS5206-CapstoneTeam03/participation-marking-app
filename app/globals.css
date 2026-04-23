@@ -836,6 +836,11 @@ button {
   opacity: 0.85;
 }
 
+.marking-nav-spacer {
+  min-width: 120px;
+}
+/* ─── Responsive adjustments ─────────────────────────────── */
+
 /* ─── Shared app shell utilities (used by AppShell + pages) ─ */
 
 .app-shell {
