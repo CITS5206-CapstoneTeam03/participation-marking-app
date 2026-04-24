@@ -8,6 +8,7 @@ from ....db.db import get_db
 from ....schemas.marks import MarkCreate, MarkResponse, MarkUpdate
 from ....crud import crud_marks as crud_marks
 from ....crud import crud_enabled_weeks as crud_enabled_weeks
+from ....crud import crud_system_config as crud_system_config
 from ....services import csv_export
 
 router = APIRouter()
@@ -103,6 +104,18 @@ def batch_update_workshop_marks(
     marks_in: List[MarkUpdate],
     db: Session = Depends(get_db),
 ):
+    if not crud_system_config.is_week6_lock_enabled(db) and any(m.week_number <= 6 for m in marks_in if m.week_number is not None):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Updating marks for Week 6 is currently locked.",
+        )
+    
+    if not crud_system_config.is_week12_lock_enabled(db) and any(m.week_number <= 12 and m.week_number > 6 for m in marks_in if m.week_number is not None):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Updating marks for Week 12 is currently locked.",
+        )
+
     if not marks_in:
         return []
 
