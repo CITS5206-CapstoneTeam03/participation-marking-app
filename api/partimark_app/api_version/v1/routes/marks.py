@@ -39,6 +39,73 @@ def create_mark(mark_in: MarkCreate, db: Session = Depends(get_db)):
     return new_mark
 
 
+@router.post("/workshop/{workshop_id}/batch", response_model=List[MarkResponse], status_code=status.HTTP_201_CREATED)
+def batch_create_workshop_marks(
+    workshop_id: int,
+    marks_in: List[MarkCreate],
+    db: Session = Depends(get_db),
+):
+
+    if crud_system_config.is_week6_lock_enabled(db) and any(m.week_number <= 6 for m in marks_in if m.week_number is not None):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Updating marks for Week 6 is currently locked.",
+        )
+    
+    if crud_system_config.is_week12_lock_enabled(db) and any(m.week_number <= 12 and m.week_number > 6 for m in marks_in if m.week_number is not None):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Updating marks for Week 12 is currently locked.",
+        )
+
+    if not marks_in:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="At least one mark is required for batch creation.",
+        )
+
+    if any(mark.workshop_id != workshop_id for mark in marks_in):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="All marks in the batch must belong to the requested workshop.",
+        )
+
+    week_numbers = {mark.week_number for mark in marks_in}
+    if len(week_numbers) != 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Batch create must target exactly one week at a time.",
+        )
+
+    target_week = next(iter(week_numbers))
+    enabled_week = crud_enabled_weeks.get_enabled_week(db, target_week)
+    if not enabled_week:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This week is not enabled for participation marking.",
+        )
+
+    student_ids = [mark.student_id for mark in marks_in]
+    if len(student_ids) != len(set(student_ids)):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Batch create must contain one mark per student.",
+        )
+
+    existing_marks = crud_marks.get_marks_by_week(db, target_week)
+    existing_student_ids = {mark.student_id for mark in existing_marks}
+    duplicate_student_ids = sorted(existing_student_ids.intersection(student_ids))
+    if duplicate_student_ids:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Marks already exist for student(s): {', '.join(duplicate_student_ids)}.",
+        )
+
+    marks_data = [mark.model_dump() for mark in marks_in]
+    new_marks = crud_marks.batch_create_marks(db, marks_data=marks_data)
+    return new_marks
+
+
 @router.get("/", response_model=List[MarkResponse])
 def get_all_marks(db: Session = Depends(get_db)):
     return crud_marks.get_all_marks(db)
@@ -104,13 +171,13 @@ def batch_update_workshop_marks(
     marks_in: List[MarkUpdate],
     db: Session = Depends(get_db),
 ):
-    if not crud_system_config.is_week6_lock_enabled(db) and any(m.week_number <= 6 for m in marks_in if m.week_number is not None):
+    if crud_system_config.is_week6_lock_enabled(db) and any(m.week_number <= 6 for m in marks_in if m.week_number is not None):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Updating marks for Week 6 is currently locked.",
         )
     
-    if not crud_system_config.is_week12_lock_enabled(db) and any(m.week_number <= 12 and m.week_number > 6 for m in marks_in if m.week_number is not None):
+    if crud_system_config.is_week12_lock_enabled(db) and any(m.week_number <= 12 and m.week_number > 6 for m in marks_in if m.week_number is not None):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Updating marks for Week 12 is currently locked.",
