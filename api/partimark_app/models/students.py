@@ -27,7 +27,7 @@ class Student(Base):
     image_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
 
     status: Mapped[StudentStatus] = mapped_column(
-        Enum(StudentStatus, name="student_status"),
+        Enum(StudentStatus, name="student_status", values_callable=lambda obj: [e.value for e in obj]),
         nullable=False,
         default=StudentStatus.ACTIVE,
     )

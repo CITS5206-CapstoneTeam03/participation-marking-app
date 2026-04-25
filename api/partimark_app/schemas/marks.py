@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -65,3 +65,16 @@ class MarkResponse(MarkInDBBase):
 class MarkInDB(MarkInDBBase):
     """Schema fully representing the database record internally."""
     pass
+
+#
+# 7. For Batch API Endpoint (Workshop Detail View)
+#
+class MarkBatchRequestItem(BaseModel):
+    """Schema for a single student's mark when submitting a batch."""
+    student_id: str = Field(..., max_length=20)
+    score: int = Field(..., ge=0, le=3)
+
+class MarkBatchRequest(BaseModel):
+    """Schema for the complete batch request."""
+    marked_by_user_id: str = Field(..., max_length=50)
+    marks: List[MarkBatchRequestItem]
