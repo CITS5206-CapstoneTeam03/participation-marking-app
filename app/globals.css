@@ -478,6 +478,51 @@ button {
   padding: 20px 0 0;
 }
 
+.review-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.review-summary-card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  box-shadow: var(--panel-shadow);
+  padding: 16px 18px;
+}
+
+.review-summary-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.review-summary-value {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--navy);
+}
+
+.review-warning {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid #f5c26b;
+  border-radius: 12px;
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.review-actions .marking-nav-btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* ─── Marking page header controls ──────────────────────── */
 
 .marking-page-header {
@@ -1263,6 +1308,18 @@ button {
 
   .score-number {
     font-size: 32px;
+  }
+  
+  .review-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .review-actions {
+    flex-direction: column;
+  }
+
+  .review-actions .marking-nav-btn {
+    width: 100%;
   }
 }
 
