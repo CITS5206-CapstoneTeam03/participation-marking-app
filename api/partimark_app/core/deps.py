@@ -41,3 +41,16 @@ def get_current_user(
             detail="Invalid authentication token.",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+from partimark_app.models.users import User, UserRole
+
+def get_non_admin_user(current_user: User = Depends(get_current_user)) -> User:
+    """
+    Dependency that ensures the current user is NOT an Admin.
+    """
+    if current_user.role == UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrators are not permitted to access or modify marks.",
+        )
+    return current_user
