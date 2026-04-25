@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from ....db.db import get_db
-from ....schemas.system_config import (
+from ....db.db import get_db #type:ignore
+from ....schemas.system_config import ( #type:ignore
     SystemConfigCreate,
     SystemConfigResponse,
     SystemConfigUpdate,
 )
-from ....crud import crud_system_config as crud
-from ....crud import crud_users as crud_users
+from ....crud import crud_system_config as crud  # type: ignore
+from ....crud import crud_users as crud_users  # type: ignore
 
 router = APIRouter()
 

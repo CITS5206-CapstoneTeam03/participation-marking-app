@@ -4,12 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from ....db.db import get_db
-from ....schemas.marks import MarkCreate, MarkResponse, MarkUpdate
-from ....crud import crud_marks as crud_marks
-from ....crud import crud_enabled_weeks as crud_enabled_weeks
-from ....crud import crud_system_config as crud_system_config
-from ....services import csv_export
+from ....db.db import get_db #type:ignore
+from ....schemas.marks import MarkCreate, MarkResponse, MarkUpdate #type:ignore
+from ....crud import crud_marks as crud_marks #type:ignore
+from ....crud import crud_enabled_weeks as crud_enabled_weeks #type:ignore
+from ....crud import crud_system_config as crud_system_config #type:ignore
+from ....services import csv_export #type:ignore
 
 router = APIRouter()
 

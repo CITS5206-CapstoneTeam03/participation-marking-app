@@ -3,10 +3,10 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from ....db.db import get_db
-from ....schemas.workshops import WorkshopCreate, WorkshopResponse, WorkshopUpdate
-from ....crud import crud_workshops as crud_workshops
-from ....crud import crud_users as crud_users
+from ....db.db import get_db #type:ignore
+from ....schemas.workshops import WorkshopCreate, WorkshopResponse, WorkshopUpdate #type:ignore
+from ....crud import crud_workshops as crud_workshops #type:ignore
+from ....crud import crud_users as crud_users #type:ignore
 
 router = APIRouter()
 
