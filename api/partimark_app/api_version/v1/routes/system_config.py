@@ -9,6 +9,8 @@ from ....schemas.system_config import ( #type:ignore
 )
 from ....crud import crud_system_config as crud  # type: ignore
 from ....crud import crud_users as crud_users  # type: ignore
+from ....core.deps import get_current_user # type: ignore
+from ....models.users import User, UserRole # type: ignore
 
 router = APIRouter()
 
@@ -25,7 +27,17 @@ def get_current_system_config(db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=SystemConfigResponse, status_code=status.HTTP_201_CREATED)
-def create_system_config(config_in: SystemConfigCreate, db: Session = Depends(get_db)):
+def create_system_config(
+    config_in: SystemConfigCreate, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.UC:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only Unit Coordinators (UC) can modify system configurations.",
+        )
+
     existing_config = crud.get_current_system_config(db)
     if existing_config:
         raise HTTPException(
@@ -57,7 +69,14 @@ def create_system_config(config_in: SystemConfigCreate, db: Session = Depends(ge
 def update_current_system_config(
     config_update: SystemConfigUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
+    if current_user.role != UserRole.UC:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only Unit Coordinators (UC) can modify system configurations.",
+        )
+
     db_config = crud.get_current_system_config(db)
     if not db_config:
         raise HTTPException(

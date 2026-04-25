@@ -45,7 +45,7 @@ def batch_create_workshop_marks(
     marks_in: List[MarkCreate],
     db: Session = Depends(get_db),
 ):
-
+    # check week 6 & 12 lock
     if crud_system_config.is_week6_lock_enabled(db) and any(m.week_number <= 6 for m in marks_in if m.week_number is not None):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -58,18 +58,21 @@ def batch_create_workshop_marks(
             detail="Updating marks for Week 12 is currently locked.",
         )
 
+    #check if marks_in is empty
     if not marks_in:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="At least one mark is required for batch creation.",
         )
 
+    #check if all marks in the batch belong to the requested workshop
     if any(mark.workshop_id != workshop_id for mark in marks_in):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="All marks in the batch must belong to the requested workshop.",
         )
 
+    #check if all marks in the batch are for the same week
     week_numbers = {mark.week_number for mark in marks_in}
     if len(week_numbers) != 1:
         raise HTTPException(
@@ -77,6 +80,7 @@ def batch_create_workshop_marks(
             detail="Batch create must target exactly one week at a time.",
         )
 
+    #check if the week is enabled
     target_week = next(iter(week_numbers))
     enabled_week = crud_enabled_weeks.get_enabled_week(db, target_week)
     if not enabled_week:
@@ -85,6 +89,7 @@ def batch_create_workshop_marks(
             detail="This week is not enabled for participation marking.",
         )
 
+    #check if all marks in the batch are for different students
     student_ids = [mark.student_id for mark in marks_in]
     if len(student_ids) != len(set(student_ids)):
         raise HTTPException(
@@ -92,6 +97,7 @@ def batch_create_workshop_marks(
             detail="Batch create must contain one mark per student.",
         )
 
+    #check if marks already exist for any of the students
     existing_marks = crud_marks.get_marks_by_week(db, target_week)
     existing_student_ids = {mark.student_id for mark in existing_marks}
     duplicate_student_ids = sorted(existing_student_ids.intersection(student_ids))
