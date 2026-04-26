@@ -27,6 +27,20 @@ function getDisplayName(firstName: string, lastName: string, preferredName?: str
   return `${firstName} ${lastName}`.trim();
 }
 
+function escapeCsvValue(value: string | number | null | undefined) {
+  const text = value === null || value === undefined ? "" : String(value);
+
+  if (/[",\n]/.test(text)) {
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+
+  return text;
+}
+
+function toFileSafeSegment(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
 function AnalyticsContent() {
   const {
     viewRole,
@@ -141,6 +155,58 @@ function AnalyticsContent() {
   const showWorkshopFilter = viewRole === "coordinator" || visibleWorkshops.length > 1;
   const showWorkshopColumn = viewRole === "coordinator" || selectedWorkshopId === "all";
 
+  const handleExportCsv = () => {
+    const workshopLabel =
+      selectedWorkshopId === "all"
+        ? "all-workshops"
+        : toFileSafeSegment(
+            visibleWorkshops.find((workshop) => workshop.id === selectedWorkshopId)?.name ??
+              "selected-workshop",
+          );
+
+    const roleLabel = viewRole === "coordinator" ? "coordinator" : "tutor";
+
+    const headers = [
+      "Student ID",
+      "Student Name",
+      ...(showWorkshopColumn ? ["Workshop"] : []),
+      "Email",
+      "Marks Recorded",
+      "Enabled Weeks",
+      "Avg Score",
+      "Grade (%)",
+      "Status",
+    ];
+
+    const rows = filteredRows.map((row) => [
+      row.studentId,
+      row.studentName,
+      ...(showWorkshopColumn ? [row.workshopName] : []),
+      row.email,
+      row.marksRecorded,
+      enabledWeeks.length,
+      row.averageScore === null ? "" : row.averageScore.toFixed(2),
+      row.gradePercentage.toFixed(1),
+      row.isAtRisk ? "At Risk" : "On Track",
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map((row) => row.map((cell) => escapeCsvValue(cell)).join(","))
+      .join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.setAttribute("download", `analytics-${roleLabel}-${workshopLabel}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
+  };
+
   const metricGridClassName =
     viewRole === "coordinator"
       ? "real-page-panel dashboard-metric-grid"
@@ -148,9 +214,37 @@ function AnalyticsContent() {
 
   return (
     <>
-      <header className="prototype-header">
-        <h1>Analytics & Reporting</h1>
-        <p>Student participation insights and statistics</p>
+      <header
+        className="prototype-header"
+        style={{
+          alignItems: "flex-start",
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "16px",
+          justifyContent: "space-between",
+        }}
+      >
+        <div>
+          <h1>Analytics & Reporting</h1>
+          <p>Student participation insights and statistics</p>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleExportCsv}
+          style={{
+            background: "#4f46e5",
+            border: "none",
+            borderRadius: "12px",
+            color: "#ffffff",
+            cursor: "pointer",
+            fontSize: "14px",
+            fontWeight: 700,
+            padding: "12px 18px",
+          }}
+        >
+          Export CSV
+        </button>
       </header>
 
       <section className={metricGridClassName}>
