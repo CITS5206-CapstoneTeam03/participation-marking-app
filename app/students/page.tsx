@@ -199,7 +199,7 @@ export default function StudentsPage() {
                 <img
                   src={previewUrl}
                   alt="Selected student preview"
-                  className="h-[320px] w-full rounded-2xl border border-[var(--line)] object-cover bg-white"
+                  className="h-[320px] w-full rounded-2xl border border-[var(--line)] object-contain bg-white"
                 />
                 <div className="flex gap-3">
                   <button
@@ -322,7 +322,7 @@ export default function StudentsPage() {
                     <img
                       src={selectedStudent.image_url}
                       alt={`${buildStudentDisplayName(selectedStudent)} current profile`}
-                      className="h-40 w-40 rounded-2xl border border-[var(--line)] object-cover bg-white"
+                      className="h-40 w-40 rounded-2xl border border-[var(--line)] object-contain bg-white"
                     />
                   ) : (
                     <div className="flex h-40 w-40 items-center justify-center rounded-2xl border border-dashed border-[var(--line)] bg-white text-center text-sm text-[var(--ink-soft)]">
