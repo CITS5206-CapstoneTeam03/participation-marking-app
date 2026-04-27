@@ -29,10 +29,10 @@ class Student(Base):
     # produced by the manual photo matching UI.
     image_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
-    status: Mapped[StudentStatus] = mapped_column(
-        Enum(StudentStatus, name="student_status"),
+    status: Mapped[str] = mapped_column(
+        String(20),
         nullable=False,
-        default=StudentStatus.ACTIVE,
+        default="active",
     )
 
     created_at: Mapped[datetime] = mapped_column(

@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
-from ..models.students import Student, StudentStatus
+from ..models.students import Student
 
 
 def get_student_by_email(db: Session, email: str) -> Optional[Student]:
@@ -22,7 +22,7 @@ def get_students(db: Session, skip: int = 0, limit: int = 100) -> List[Student]:
 
 def get_students_by_status(
     db: Session,
-    status: StudentStatus,
+    status: str,
     skip: int = 0,
     limit: int = 100,
 ) -> List[Student]:
@@ -57,7 +57,7 @@ def update_student(db: Session, db_student: Student, update_data: dict) -> Stude
 
 def withdraw_student(db: Session, db_student: Student) -> Student:
     """Mark a student as withdrawn instead of deleting the record."""
-    db_student.status = StudentStatus.WITHDRAWN
+    db_student.status = "withdrawn"
     db.commit()
     db.refresh(db_student)
     return db_student
@@ -65,7 +65,7 @@ def withdraw_student(db: Session, db_student: Student) -> Student:
 
 def reactivate_student(db: Session, db_student: Student) -> Student:
     """Mark a withdrawn student back to active if needed."""
-    db_student.status = StudentStatus.ACTIVE
+    db_student.status = "active"
     db.commit()
     db.refresh(db_student)
     return db_student
