@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { CoordinatorShell } from "../components/coordinator-shell";
+import { useAppContext } from "../context/app-context";
 import { getStudents, updateStudent, type StudentDto } from "../lib/services/student";
 
 function buildStudentDisplayName(student: StudentDto): string {
@@ -21,6 +22,8 @@ function fileToDataUrl(file: File): Promise<string> {
 }
 
 export default function StudentsPage() {
+  const { syncStudentPhoto } = useAppContext();
+
   const [students, setStudents] = useState<StudentDto[]>([]);
   const [isLoadingStudents, setIsLoadingStudents] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -72,7 +75,7 @@ export default function StudentsPage() {
 
     const maxSizeBytes = 2 * 1024 * 1024; // 2MB
     if (file.size > maxSizeBytes) {
-      setMessage("Please upload an image smaller than 2MB.");
+      setMessage("Image is too large. Please upload an image smaller than 2MB.");
       return;
     }
 
@@ -119,7 +122,7 @@ export default function StudentsPage() {
     [students, selectedStudentId],
   );
 
-  async function handleMatchPhoto() {
+  async function handleSavePhoto() {
     if (!selectedFile) {
       setMessage("Please select a photo first.");
       return;
@@ -140,22 +143,19 @@ export default function StudentsPage() {
         image_url: dataUrl,
       });
 
-      setStudents((prev) =>
-        prev.map((student) =>
-          student.student_id === updated.student_id ? updated : student,
-        ),
-      );
-
-      setMessage(`Photo matched successfully to ${buildStudentDisplayName(updated)}.`);
+      await loadStudentList();
+      syncStudentPhoto(updated.student_id, updated.image_url ?? null);
 
       if (previewUrl && previewUrl.startsWith("blob:")) {
         URL.revokeObjectURL(previewUrl);
       }
+
       setSelectedFile(null);
       setPreviewUrl(null);
+      setMessage("Photo saved successfully.");
     } catch (error) {
       console.error(error);
-      setMessage("Failed to match photo. Please try again.");
+      setMessage("Failed to save photo. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -176,6 +176,9 @@ export default function StudentsPage() {
             </p>
             <p className="mt-1 text-sm text-[var(--ink-soft)]">
               Upload a photo file and preview it before linking.
+            </p>
+            <p className="mt-2 text-xs text-[var(--ink-soft)]">
+              Accepted formats: PNG, JPG, WEBP. Maximum size: 2MB.
             </p>
           </div>
 
@@ -232,7 +235,7 @@ export default function StudentsPage() {
               Match to Student
             </p>
             <p className="mt-1 text-sm text-[var(--ink-soft)]">
-              Search by student ID, name, or email and then link the uploaded photo.
+              Search by student ID, name, or email and save the uploaded photo to the selected student profile.
             </p>
           </div>
 
@@ -338,14 +341,14 @@ export default function StudentsPage() {
             )}
           </div>
 
-          <div className="mt-5 flex flex-wrap items-center gap-3">
+          <div className="mt-5 flex items-center justify-between gap-3">
             <button
               type="button"
-              onClick={handleMatchPhoto}
+              onClick={handleSavePhoto}
               disabled={isSaving || !selectedFile || !selectedStudentId}
-              className="rounded-xl bg-[var(--brand)] px-5 py-3 text-sm font-semibold text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-xl border border-[var(--line)] px-5 py-3 text-sm font-semibold text-[var(--navy)] hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isSaving ? "Matching..." : "Match Photo"}
+              {isSaving ? "Saving..." : "Save Photo"}
             </button>
 
             <button
@@ -409,7 +412,15 @@ export default function StudentsPage() {
                       {student.email}
                     </td>
                     <td className="px-3 py-3 text-sm text-[var(--navy)]">
-                      {student.image_url ? "Matched" : "Not matched"}
+                      {student.image_url ? (
+                        <img
+                          src={student.image_url}
+                          alt={`${buildStudentDisplayName(student)} thumbnail`}
+                          className="h-14 w-14 rounded-xl border border-[var(--line)] object-contain bg-white"
+                        />
+                      ) : (
+                        "Not matched"
+                      )}
                     </td>
                   </tr>
                 ))}

@@ -29,7 +29,7 @@ export function MarkingView() {
     notes: "",
     score: 0,
     previousAverage: 0,
-    photoUrl: "",
+    photoUrl: s.photoUrl ?? "",
   }));
 
   return (

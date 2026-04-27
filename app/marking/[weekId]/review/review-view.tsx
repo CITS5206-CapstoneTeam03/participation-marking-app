@@ -28,7 +28,7 @@ export function ReviewView() {
     notes: "",
     score: 0,
     previousAverage: 0,
-    photoUrl: "",
+    photoUrl: s.photoUrl ?? "",
   }));
 
   return (
