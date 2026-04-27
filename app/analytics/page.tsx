@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { CoordinatorShell } from "../components/coordinator-shell";
 import { TutorShell } from "../components/tutor-shell";
 import { useAppContext } from "../context/app-context";
@@ -69,14 +69,11 @@ function AnalyticsContent() {
     return workshops.filter((workshop) => workshop.tutorName === currentUserName);
   }, [viewRole, workshops, currentUserName]);
 
-  useEffect(() => {
-    if (
-      selectedWorkshopId !== "all" &&
-      !visibleWorkshops.some((workshop) => workshop.id === selectedWorkshopId)
-    ) {
-      setSelectedWorkshopId("all");
-    }
-  }, [selectedWorkshopId, visibleWorkshops]);
+  const effectiveWorkshopId =
+    selectedWorkshopId === "all" ||
+    visibleWorkshops.some((workshop) => workshop.id === selectedWorkshopId)
+      ? selectedWorkshopId
+      : "all";
 
   const allRows = useMemo<AnalyticsRow[]>(() => {
     const rows = visibleWorkshops.flatMap((workshop) => {
@@ -87,7 +84,7 @@ function AnalyticsContent() {
           .map((week) => sessionMarks[week.id]?.[student.studentId])
           .filter((score): score is Score => score !== undefined);
 
-        const totalScore = recordedScores.reduce((sum, score) => sum + score, 0);
+        const totalScore = recordedScores.reduce<number>((sum, score) => sum + score, 0);
         const averageScore = recordedScores.length > 0 ? totalScore / recordedScores.length : null;
         const gradePercentage =
           totalParticipationPoints > 0
@@ -138,11 +135,11 @@ function AnalyticsContent() {
   ]);
 
   const filteredRows = useMemo(() => {
-    if (selectedWorkshopId === "all") {
+    if (effectiveWorkshopId === "all") {
       return allRows;
     }
-    return allRows.filter((row) => row.workshopId === selectedWorkshopId);
-  }, [allRows, selectedWorkshopId]);
+    return allRows.filter((row) => row.workshopId === effectiveWorkshopId);
+  }, [allRows, effectiveWorkshopId]);
 
   const totalRecordedMarks = filteredRows.reduce((sum, row) => sum + row.marksRecorded, 0);
   const totalRecordedScore = filteredRows.reduce((sum, row) => sum + row.totalScore, 0);
@@ -150,17 +147,17 @@ function AnalyticsContent() {
   const atRiskRows = filteredRows.filter((row) => row.isAtRisk);
   const totalStudents = filteredRows.length;
   const totalWorkshops =
-    selectedWorkshopId === "all" ? visibleWorkshops.length : totalStudents > 0 ? 1 : 0;
+    effectiveWorkshopId === "all" ? visibleWorkshops.length : totalStudents > 0 ? 1 : 0;
 
   const showWorkshopFilter = viewRole === "coordinator" || visibleWorkshops.length > 1;
-  const showWorkshopColumn = viewRole === "coordinator" || selectedWorkshopId === "all";
-
+  const showWorkshopColumn = viewRole === "coordinator" || effectiveWorkshopId === "all";
+  
   const handleExportCsv = () => {
-    const workshopLabel =
-      selectedWorkshopId === "all"
+      const workshopLabel =
+      effectiveWorkshopId === "all"
         ? "all-workshops"
         : toFileSafeSegment(
-            visibleWorkshops.find((workshop) => workshop.id === selectedWorkshopId)?.name ??
+            visibleWorkshops.find((workshop) => workshop.id === effectiveWorkshopId)?.name ??
               "selected-workshop",
           );
 
@@ -321,7 +318,7 @@ function AnalyticsContent() {
 
             {showWorkshopFilter && (
               <select
-                value={selectedWorkshopId}
+                value={effectiveWorkshopId}
                 onChange={(e) => setSelectedWorkshopId(e.target.value)}
                 style={{
                   background: "#ffffff",
