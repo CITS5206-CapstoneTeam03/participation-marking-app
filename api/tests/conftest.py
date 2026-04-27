@@ -6,11 +6,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-# Add the app directory to the system path to allow importing modules
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "partimark_app")))
+# Add the api directory to the system path to allow importing the app package
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from partimark_app.db.db import Base, get_db  # type: ignore # noqa: E402
-from main import app  # type: ignore # noqa: E402
+from partimark_app.main import app  # type: ignore # noqa: E402
 
 # Use an in-memory SQLite database for testing to ensure isolation and speed
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
