@@ -14,7 +14,10 @@ class StudentBase(BaseModel):
     last_name: str = Field(..., max_length=100)
     preferred_name: Optional[str] = Field(None, max_length=100)
     email: EmailStr
-    image_url: Optional[str] = Field(None, max_length=500)
+
+    # Removed max_length so the MVP can store a base64 data URL for manual photo matching.
+    image_url: Optional[str] = None
+
     status: StudentStatus = Field(
         default=StudentStatus.ACTIVE,
         description="The current status of the student",
@@ -41,7 +44,7 @@ class StudentUpdate(BaseModel):
     last_name: Optional[str] = Field(None, max_length=100)
     preferred_name: Optional[str] = Field(None, max_length=100)
     email: Optional[EmailStr] = None
-    image_url: Optional[str] = Field(None, max_length=500)
+    image_url: Optional[str] = None
     status: Optional[StudentStatus] = Field(
         None,
         description="The current status of the student",
