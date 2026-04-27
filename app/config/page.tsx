@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CoordinatorShell } from "../components/coordinator-shell";
 import { useAppContext } from "../context/app-context";
+import { replaceEnabledWeeks, updateCurrentSystemConfig } from "../lib/services/participation";
 
 export default function ConfigPage() {
   const {
@@ -12,9 +13,12 @@ export default function ConfigPage() {
     setMaxWeeklyScore,
     totalAssessmentWeighting,
     setTotalAssessmentWeighting,
+    currentUserId,
   } = useAppContext();
 
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"unit" | "students">("unit");
 
   const selectedWeeks = weeks.filter((w) => w.enabled);
@@ -22,6 +26,7 @@ export default function ConfigPage() {
 
   const toggleWeek = (weekId: string) => {
     setSaved(false);
+    setSaveError(null);
     setWeeks(weeks.map((w) => (w.id === weekId && !w.locked ? { ...w, enabled: !w.enabled } : w)));
   };
 
@@ -36,6 +41,7 @@ export default function ConfigPage() {
 
   const toggleWeek6Lock = () => {
     setSaved(false);
+    setSaveError(null);
     if (week6AllLocked) {
       setWeeks(weeks.map((w) => (week6Ids.includes(w.id) ? { ...w, locked: false } : w)));
     } else {
@@ -46,11 +52,35 @@ export default function ConfigPage() {
 
   const toggleWeek12Lock = () => {
     setSaved(false);
+    setSaveError(null);
     if (week12AllLocked) {
       setWeeks(weeks.map((w) => (week12Ids.includes(w.id) ? { ...w, locked: false } : w)));
     } else {
       // Locking should never force week selection; preserve existing enabled states.
       setWeeks(weeks.map((w) => (week12Ids.includes(w.id) ? { ...w, locked: true } : w)));
+    }
+  };
+
+  const saveConfiguration = async () => {
+    setIsSaving(true);
+    setSaved(false);
+    setSaveError(null);
+
+    try {
+      await replaceEnabledWeeks(selectedWeeks.map((week) => week.weekNumber));
+      await updateCurrentSystemConfig({
+        max_weekly_score: maxWeeklyScore,
+        total_participation_points: totalAssessmentWeighting,
+        is_configured: selectedWeeks.length > 0,
+        week6_lock_enabled: week6AllLocked,
+        week12_lock_enabled: week12AllLocked,
+        updated_by_user_id: currentUserId,
+      });
+      setSaved(true);
+    } catch {
+      setSaveError("Saved locally. Backend configuration could not be updated from this frontend session.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -65,10 +95,11 @@ export default function ConfigPage() {
         <div className="flex flex-col items-end gap-1">
           <button
             type="button"
-            onClick={() => setSaved(true)}
+            onClick={saveConfiguration}
+            disabled={isSaving}
             className="rounded-full bg-[var(--navy)] px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
           >
-            Save configuration
+            {isSaving ? "Saving..." : "Save configuration"}
           </button>
           <p className="text-xs text-[var(--ink-soft)]">Changes are auto-saved</p>
         </div>
@@ -92,6 +123,9 @@ export default function ConfigPage() {
 
       {saved && activeTab === "unit" && (
         <div className="config-save-banner">Configuration saved successfully.</div>
+      )}
+      {saveError && activeTab === "unit" && (
+        <div className="config-save-banner">{saveError}</div>
       )}
 
       {activeTab === "unit" && (
@@ -162,6 +196,7 @@ export default function ConfigPage() {
                   value={maxWeeklyScore}
                   onChange={(e) => {
                     setSaved(false);
+                    setSaveError(null);
                     const v = Number(e.target.value);
                     if (!Number.isNaN(v) && v >= 1 && v <= 3) setMaxWeeklyScore(v);
                   }}
@@ -181,6 +216,7 @@ export default function ConfigPage() {
                   value={totalAssessmentWeighting}
                   onChange={(e) => {
                     setSaved(false);
+                    setSaveError(null);
                     const v = Number(e.target.value);
                     if (!Number.isNaN(v))
                       setTotalAssessmentWeighting(Math.min(100, Math.max(0, v)));

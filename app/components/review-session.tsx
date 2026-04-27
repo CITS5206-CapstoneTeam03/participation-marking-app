@@ -25,10 +25,12 @@ type ReviewSessionProps = {
  * current scores (from context). Allows inline score correction before
  * final submission.
  */
-export function ReviewSession({ students, weekId, weekLabel }: ReviewSessionProps) {
+export function ReviewSession({ students, weekId }: ReviewSessionProps) {
   const router = useRouter();
-  const { sessionMarks, setMark } = useAppContext();
+  const { sessionMarks, setMark, submitWeekMarks } = useAppContext();
   const [showMilestone, setShowMilestone] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const weekMarks = sessionMarks[weekId] ?? {};
 
@@ -40,16 +42,27 @@ export function ReviewSession({ students, weekId, weekLabel }: ReviewSessionProp
   // Sort students alphabetically by name (matches Figma)
   const sorted = [...students].sort((a, b) => a.name.localeCompare(b.name));
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!canSubmit) return;
 
-    // Show Week 6 milestone popup before navigating away
-    if (weekId === "week-6") {
-      setShowMilestone(true);
-      return;
-    }
+    setIsSubmitting(true);
+    setSubmitError(null);
 
-    router.push("/marking");
+    try {
+      await submitWeekMarks(weekId);
+
+      // Show Week 6 milestone popup before navigating away
+      if (weekId === "week-6") {
+        setShowMilestone(true);
+        return;
+      }
+
+      router.push("/marking");
+    } catch {
+      setSubmitError("Marks are saved locally, but backend submission did not complete.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   function dismissMilestone() {
@@ -122,6 +135,12 @@ export function ReviewSession({ students, weekId, weekLabel }: ReviewSessionProp
       {unmarkedCount > 0 && (
         <p className="review-warning" role="alert">
           {unmarkedCount} student{unmarkedCount === 1 ? "" : "s"} still need a score before submission.
+        </p>
+      )}
+
+      {submitError && (
+        <p className="review-warning" role="alert">
+          {submitError}
         </p>
       )}
 
@@ -208,11 +227,11 @@ export function ReviewSession({ students, weekId, weekLabel }: ReviewSessionProp
           type="button"
           className="marking-nav-btn marking-nav-btn--primary"
           onClick={handleSubmit}
-          disabled={!canSubmit}
-          aria-disabled={!canSubmit}
+          disabled={!canSubmit || isSubmitting}
+          aria-disabled={!canSubmit || isSubmitting}
           style={{ padding: "13px 28px" }}
         >
-          Submit &amp; Complete
+          {isSubmitting ? "Submitting..." : "Submit & Complete"}
         </button>
         <button
           type="button"

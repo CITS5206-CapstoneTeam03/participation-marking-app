@@ -1,14 +1,15 @@
 import { apiRequest } from "../axios-instance";
-
-export type UserDto = {
-    id: number;
-    name: string | null;
-    email: string | null;
-};
+import type { UserDto } from "../../interface/apiTypes";
 
 export type CreateUserInput = {
-    name: string;
+    first_name: string;
+    last_name: string;
+    display_name: string;
     email: string;
+    role: "UC" | "tutor";
+    password: string;
+    preferred_name?: string | null;
+    is_active?: boolean;
 };
 
 export type UpdateUserInput = Partial<CreateUserInput>;
@@ -16,11 +17,11 @@ export type UpdateUserInput = Partial<CreateUserInput>;
 export function getUsers(): Promise<UserDto[]> {
     return apiRequest<UserDto[]>({
         method: "GET",
-        url: "/users",
+        url: "/users/",
     });
 }
 
-export function getUserById(userId: number): Promise<UserDto> {
+export function getUserById(userId: string): Promise<UserDto> {
     return apiRequest<UserDto>({
         method: "GET",
         url: `/users/${userId}`,
@@ -30,21 +31,21 @@ export function getUserById(userId: number): Promise<UserDto> {
 export function createUser(payload: CreateUserInput): Promise<UserDto> {
     return apiRequest<UserDto>({
         method: "POST",
-        url: "/users",
+        url: "/users/",
         data: payload,
     });
 }
 
-export function updateUser(userId: number, payload: UpdateUserInput): Promise<UserDto> {
+export function updateUser(userId: string, payload: UpdateUserInput): Promise<UserDto> {
     return apiRequest<UserDto>({
-        method: "PUT",
+        method: "PATCH",
         url: `/users/${userId}`,
         data: payload,
     });
 }
 
-export function deleteUser(userId: number): Promise<{ success: boolean }> {
-    return apiRequest<{ success: boolean }>({
+export function deleteUser(userId: string): Promise<void> {
+    return apiRequest<void>({
         method: "DELETE",
         url: `/users/${userId}`,
     });
