@@ -1,3 +1,4 @@
+from api.partimark_app.models import StudentStatus
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -9,6 +10,8 @@ from ....schemas.marks import MarkCreate, MarkResponse, MarkUpdate
 from ....crud import crud_marks as crud_marks
 from ....crud import crud_enabled_weeks as crud_enabled_weeks
 from ....services import csv_export
+from ....crud import crud_students as crud_students
+from ....crud.csv_export import calculate_total_and_percent_mark
 
 router = APIRouter()
 
@@ -79,7 +82,8 @@ def export_semester_grades(
     assessment_column_name: str,
     db: Session = Depends(get_db),
 ):
-    marks = crud_marks.get_all_marks(db)
+    marks = calculate_total_and_percent_mark(db)
+    inactive_students = crud_students.get_students_by_status(db, StudentStatus.WITHDRAWN)
 
     if not marks:
         raise HTTPException(
@@ -89,7 +93,7 @@ def export_semester_grades(
 
     csv_string = csv_export.generate_lms_export(
         marks,
-        assessment_column_name=assessment_column_name,
+        inactive_students,
     )
 
     response = StreamingResponse(iter([csv_string]), media_type="text/csv")

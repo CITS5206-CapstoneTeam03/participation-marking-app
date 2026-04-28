@@ -1,49 +1,45 @@
-import pandas as pd
+from ..models.students import Student
 from typing import List
+import pandas as pd
 
 # Assuming you imported your DB models, e.g.:
 # from models.marks import ParticipationMark
 
-def generate_lms_export(marks: List, assessment_column_name: str) -> str:
+def generate_lms_export(
+    marks: dict[tuple[str, str, str], tuple[int,float]], 
+    inactive_students: List[Student]
+) -> str:
     """
     Generates a CSV string formatted perfectly for the client's LMS import process.
-    The LMS explicitly requires exact header names and empty buffer columns to validate the file.
-    
-    Args:
-        marks: A list of ParticipationMark database models (must have the .student relationship loaded)
-        assessment_column_name: The exact string title of the Assessment column inside the LMS.
-    
-    Returns:
-        A raw string containing the formatted CSV file contents.
     """
     export_data = []
     
-    for mark in marks:
-        # Resolve Student Relationship Data safely. 
-        # (Requires the API query to include `joinedload(ParticipationMark.student)`)
-        student = getattr(mark, "student", None)
-        
-        # Ensure fallback safety in case relationship wasn't loaded 
-        first_name = getattr(student, "first_name", "") if student else ""
-        last_name = getattr(student, "last_name", "") if student else ""
-        
-        # Client note: Column F ("Availability") uses "Yes" or "No".
-        # Schema V3 stores student availability via `status` = active / withdrawn.
-        student_status = getattr(student, "status", "active") if student else "active"
-        status_value = getattr(student_status, "value", student_status)
-        availability_str = "Yes" if status_value == "active" else "No"
-        
+    for (student_id, first_name, last_name), (total, percent) in marks.items():
         row = {
             "Last Name": last_name,
             "First Name": first_name,
-            "Username": mark.student_id,  # Client Instruction: Column C must contain the student ID
+            "Username": student_id,  # Client Instruction: Column C must contain the student ID
             "Student ID": "",             # Client Instruction: Column D must exist but remain strictly empty
             "Last Access": "",            # Client Instruction: Required header, but no data needed
-            "Availability": availability_str,
-            assessment_column_name: mark.score  # The dynamic column name the LMS is expecting this week
+            "Availability": "yes",
+            "Total": total, #TO DO: Placeholder waiting for client confirm
+            "Percentage": percent #TO DO: Placeholder waiting for client confirm
         }
         export_data.append(row)
-        
+    
+    for student in inactive_students:
+        row = {
+            "Last Name": student.last_name,
+            "First Name": student.first_name,
+            "Username": student.student_id,  # Client Instruction: Column C must contain the student ID
+            "Student ID": "",             # Client Instruction: Column D must exist but remain strictly empty
+            "Last Access": "",            # Client Instruction: Required header, but no data needed
+            "Availability": "no",
+            "Total": None,
+            "Percentage": None
+        }
+        export_data.append(row)
+
     # Convert to DataFrame
     df = pd.DataFrame(export_data)
     
