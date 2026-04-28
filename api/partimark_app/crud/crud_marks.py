@@ -1,9 +1,16 @@
+from hashlib import new
 from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
 from ..models.marks import ParticipationMark
+from ..crud.crud_audit_logs import create_audit_log
+from ..schemas.audit_logs import AuditLogCreate
 
+actions = [
+    "create_mark",
+    "update_mark"
+]
 
 def get_mark(db: Session, mark_id: int) -> Optional[ParticipationMark]:
     """Retrieve a participation mark by its ID."""
@@ -77,6 +84,18 @@ def get_mark_by_student_and_week(
 def create_mark(db: Session, mark_data: dict) -> ParticipationMark:
     """Create a single participation mark."""
     new_mark = ParticipationMark(**mark_data)
+
+    audit_in = AuditLogCreate(
+        user_id=new_mark.marked_by_user_id,
+        action_type=actions[0],
+        description=f"Created mark for student {new_mark.student_id}",
+        student_id=new_mark.student_id,
+        workshop_id=new_mark.workshop_id,
+        week_number=new_mark.week_number
+    )
+
+    create_audit_log(db, log_data=audit_in.model_dump())
+
     db.add(new_mark)
     db.commit()
     db.refresh(new_mark)
@@ -86,6 +105,19 @@ def create_mark(db: Session, mark_data: dict) -> ParticipationMark:
 def batch_create_marks(db: Session, marks_data: List[dict]) -> List[ParticipationMark]:
     """Efficiently create multiple marks in bulk."""
     db_marks = [ParticipationMark(**data) for data in marks_data]
+
+    # TO DO: wait until main merge
+    # audit_in = AuditLogCreate(
+    #     user_id=marks_data.,
+    #     action_type=actions[0],
+    #     description=f"Created mark for student {new_mark.student_id}",
+    #     student_id=new_mark.student_id,
+    #     workshop_id=new_mark.workshop_id,
+    #     week_number=new_mark.week_number
+    # )
+
+    # create_audit_log(db, log_data=audit_in.model_dump())
+
     db.add_all(db_marks)
     db.commit()
     for mark in db_marks:
@@ -101,6 +133,21 @@ def update_mark(db: Session, db_mark: ParticipationMark, update_data: dict) -> P
         setattr(db_mark, key, value)
     db.commit()
     db.refresh(db_mark)
+
+    
+    audit_in = AuditLogCreate(
+        user_id=update_data.marked_by_user_id,
+        action_type=actions[1],
+        description=f"Updated mark for student {update_data.student_id}",
+        student_id=update_data.student_id,
+        workshop_id=update_data.workshop_id,
+        week_number=update_data.week_number,
+        old_value=str(db_mark.score),
+        new_value=str(update_data.score)
+    )
+
+    create_audit_log(db, log_data=audit_in.model_dump())
+
     return db_mark
 
 
