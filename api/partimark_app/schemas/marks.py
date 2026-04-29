@@ -12,7 +12,7 @@ class MarkBase(BaseModel):
     student_id: str = Field(..., max_length=20)
     workshop_id: int
     week_number: int = Field(..., ge=1, description="The enabled teaching week number")
-    score: int = Field(..., ge=0, le=3, description="Participation score from 0 to 3")
+    score: float = Field(..., ge=0, le=3, description="Participation score from 0 to 3")
     marked_by_user_id: str = Field(..., max_length=50)
 
 
@@ -35,7 +35,7 @@ class MarkUpdate(BaseModel):
     student_id: Optional[str] = Field(None, max_length=20)
     workshop_id: Optional[int] = None
     week_number: Optional[int] = Field(None, ge=1)
-    score: Optional[int] = Field(None, ge=0, le=3)
+    score: Optional[float] = Field(None, ge=0, le=3)
     marked_by_user_id: Optional[str] = Field(None, max_length=50)
 
 

@@ -7,6 +7,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    Float,
     String,
     UniqueConstraint,
     func,
@@ -55,7 +56,7 @@ class ParticipationMark(Base):
         index=True,
     )
 
-    score: Mapped[int] = mapped_column(Integer, nullable=False)
+    score: Mapped[float] = mapped_column(Float, nullable=False)
 
     marked_by_user_id: Mapped[str] = mapped_column(
         String(50),
