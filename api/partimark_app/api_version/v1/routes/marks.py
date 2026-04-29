@@ -1,7 +1,7 @@
 from api.partimark_app.models import StudentStatus
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -9,7 +9,7 @@ from ....db.db import get_db
 from ....schemas.marks import MarkCreate, MarkResponse, MarkUpdate
 from ....crud import crud_marks as crud_marks
 from ....crud import crud_enabled_weeks as crud_enabled_weeks
-from ....services import csv_export
+from ....services.csv import csv_export, csv_import
 from ....crud import crud_students as crud_students
 from ....crud.csv_export import calculate_total_and_percent_mark
 
@@ -77,9 +77,9 @@ def get_mark(mark_id: int, db: Session = Depends(get_db)):
     return mark
 
 
-@router.get("/export/semester")
-def export_semester_grades(
-    assessment_column_name: str,
+@router.post("/export/semester")
+async def export_semester_grades(
+    file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
     marks = calculate_total_and_percent_mark(db)
@@ -91,13 +91,35 @@ def export_semester_grades(
             detail="No marks found to export.",
         )
 
-    csv_string = csv_export.generate_lms_export(
-        marks,
-        inactive_students,
-    )
+    try:
+        content = await file.read()
+        template_df = csv_import.parse_template_csv(content)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to process the uploaded template. Please ensure the file is a .csv, .xls, or .xlsx file. Error: {str(e)}",
+        )
+
+    try:
+        csv_string = csv_export.generate_lms_export(
+            template_df,
+            marks,
+            inactive_students,
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+
+    filename = file.filename
+    if filename.endswith(".xls"):
+        filename = filename[:-4] + ".csv"
+    elif filename.endswith(".xlsx"):
+        filename = filename[:-5] + ".csv"
 
     response = StreamingResponse(iter([csv_string]), media_type="text/csv")
-    response.headers["Content-Disposition"] = "attachment; filename=semester_export.csv"
+    response.headers["Content-Disposition"] = f"attachment; filename=populated_{filename}"
     return response
 
 
