@@ -1,7 +1,11 @@
 import axios, { AxiosError, type AxiosRequestConfig } from "axios";
 import { ApiError } from "../interface/apiTypes";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "/api";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  (typeof window !== "undefined" && window.location.hostname === "localhost"
+    ? "http://localhost:8000/api"
+    : "/api");
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,

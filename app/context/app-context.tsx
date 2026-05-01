@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import { configWeeks as defaultConfigWeeks } from "../data/mock-data";
 import type { ConfigWeek, Score } from "../data/mock-data";
 import {
@@ -21,6 +21,7 @@ export type WorkshopStudent = {
   lastName: string;
   email: string;
   preferredName?: string;
+  photoUrl?: string;
 };
 
 export type WorkshopRecord = {
@@ -56,6 +57,7 @@ interface AppContextValue {
   assignCurrentUserAsTutor: (workshopId: string) => void;
   workshopStudents: Record<string, WorkshopStudent[]>;
   upsertWorkshopStudentsFromCsv: (workshopId: string, students: WorkshopStudent[]) => void;
+  syncStudentPhoto: (studentId: string, imageUrl: string | null) => void;
   configWeeks: ConfigWeek[];
   setConfigWeeks: (weeks: ConfigWeek[]) => void;
   maxWeeklyScore: number;
@@ -90,7 +92,8 @@ type PersistedState = Partial<{
 }>;
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [isAuthLoading, setIsAuthLoading] = useState(() => Boolean(getStoredToken()));
+  // Keep loading true until we finish restoring persisted auth / token state.
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authRole, setAuthRole] = useState<AuthRole | null>(null);
   const [currentUserName, setCurrentUserName] = useState("");
@@ -106,16 +109,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const hasHydratedFromStorage = useRef(false);
 
   function applyPersistedState(saved: PersistedState) {
+    if (typeof saved.isAuthenticated === "boolean") {
+      setIsAuthenticated(saved.isAuthenticated);
+    }
+    if (saved.authRole === "coordinator" || saved.authRole === "tutor") {
+      setAuthRole(saved.authRole);
+    }
+    if (typeof saved.currentUserName === "string") {
+      setCurrentUserName(saved.currentUserName);
+    }
+    if (typeof saved.currentUserEmail === "string") {
+      setCurrentUserEmail(saved.currentUserEmail);
+    }
+    if (saved.viewRole === "coordinator" || saved.viewRole === "tutor") {
+      setViewRoleState(saved.viewRole);
+    }
     if (Array.isArray(saved.workshops)) {
       setWorkshops(saved.workshops);
     }
     if (saved.workshopStudents && typeof saved.workshopStudents === "object") {
       setWorkshopStudents(saved.workshopStudents);
     }
-    if (Array.isArray(saved.configWeeks) && saved.configWeeks.length === defaultConfigWeeks.length) {
+    if (Array.isArray(saved.configWeeks)) {
       setConfigWeeks(saved.configWeeks);
     }
-    if (typeof saved.maxWeeklyScore === "number") setMaxWeeklyScore(saved.maxWeeklyScore);
+    if (typeof saved.maxWeeklyScore === "number") {
+      setMaxWeeklyScore(saved.maxWeeklyScore);
+    }
     if (typeof saved.totalAssessmentWeighting === "number") {
       setTotalAssessmentWeighting(saved.totalAssessmentWeighting);
     }
@@ -127,17 +147,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Hydrate persisted state only after mount to avoid SSR/client HTML mismatches.
+  // Restore persisted state after mount.
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) {
-        hasHydratedFromStorage.current = true;
-        return;
+      if (raw) {
+        const saved = JSON.parse(raw) as PersistedState;
+        applyPersistedState(saved);
       }
-      const saved = JSON.parse(raw) as PersistedState;
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      applyPersistedState(saved);
     } catch {
       // ignore read/parse issues and keep defaults
     } finally {
@@ -145,12 +162,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Validate stored JWT on mount. If valid, sync session from server; if not, clear auth state.
+  // Validate stored JWT on mount.
+  // If there is no token, keep the persisted dev-login state and finish loading.
   useEffect(() => {
     const token = getStoredToken();
+
     if (!token) {
+      setIsAuthLoading(false);
       return;
     }
+
     getMe()
       .then((user) => {
         setAuthRole(user.role);
@@ -338,6 +359,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setWorkshopStudents((prev) => ({ ...prev, [workshopId]: cleaned }));
   }
 
+  const syncStudentPhoto = useCallback((studentId: string, imageUrl: string | null) => {
+    setWorkshopStudents((prev) => {
+      const next = { ...prev };
+
+      Object.keys(next).forEach((workshopId) => {
+        next[workshopId] = next[workshopId].map((student) =>
+          student.studentId === studentId
+            ? {
+                ...student,
+                photoUrl: imageUrl ?? undefined,
+              }
+            : student,
+        );
+      });
+
+      return next;
+    });
+  }, []);
+
   function setMark(weekId: string, studentId: string, score: Score) {
     setSessionMarks((prev) => ({
       ...prev,
@@ -368,14 +408,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
         loginWithCredentials,
         loginAsRole,
         logout,
-        viewRole, setViewRole,
-        workshops, setWorkshops, createWorkshop, deleteWorkshop, updateWorkshopTutor, assignCurrentUserAsTutor,
-        workshopStudents, upsertWorkshopStudentsFromCsv,
-        configWeeks, setConfigWeeks,
-        maxWeeklyScore, setMaxWeeklyScore,
-        totalAssessmentWeighting, setTotalAssessmentWeighting,
-        activeWorkshopId, setActiveWorkshopId,
-        sessionMarks, setMark, clearWeekMarks, getWeekMarkedCount,
+        viewRole,
+        setViewRole,
+        workshops,
+        setWorkshops,
+        createWorkshop,
+        deleteWorkshop,
+        updateWorkshopTutor,
+        assignCurrentUserAsTutor,
+        workshopStudents,
+        upsertWorkshopStudentsFromCsv,
+        syncStudentPhoto,
+        configWeeks,
+        setConfigWeeks,
+        maxWeeklyScore,
+        setMaxWeeklyScore,
+        totalAssessmentWeighting,
+        setTotalAssessmentWeighting,
+        activeWorkshopId,
+        setActiveWorkshopId,
+        sessionMarks,
+        setMark,
+        clearWeekMarks,
+        getWeekMarkedCount,
       }}
     >
       {children}

@@ -1,8 +1,7 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
-from ..models.students import StudentStatus
 
 
 #
@@ -14,9 +13,12 @@ class StudentBase(BaseModel):
     last_name: str = Field(..., max_length=100)
     preferred_name: Optional[str] = Field(None, max_length=100)
     email: EmailStr
-    image_url: Optional[str] = Field(None, max_length=500)
-    status: StudentStatus = Field(
-        default=StudentStatus.ACTIVE,
+
+    # Removed max_length so the MVP can store a base64 data URL for manual photo matching.
+    image_url: Optional[str] = None
+
+    status: Literal["active", "withdrawn"] = Field(
+        default="active",
         description="The current status of the student",
     )
 
@@ -41,8 +43,8 @@ class StudentUpdate(BaseModel):
     last_name: Optional[str] = Field(None, max_length=100)
     preferred_name: Optional[str] = Field(None, max_length=100)
     email: Optional[EmailStr] = None
-    image_url: Optional[str] = Field(None, max_length=500)
-    status: Optional[StudentStatus] = Field(
+    image_url: Optional[str] = None
+    status: Optional[Literal["active", "withdrawn"]] = Field(
         None,
         description="The current status of the student",
     )

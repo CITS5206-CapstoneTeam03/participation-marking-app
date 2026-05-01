@@ -36,6 +36,11 @@ export default function ConfigPage() {
 
   const toggleWeek6Lock = () => {
     setSaved(false);
+    if (week12AllLocked) {
+      // Week 6 may not be unlocked independently once Week 12 lock is active.
+      return;
+    }
+
     if (week6AllLocked) {
       setWeeks(weeks.map((w) => (week6Ids.includes(w.id) ? { ...w, locked: false } : w)));
     } else {
@@ -47,10 +52,22 @@ export default function ConfigPage() {
   const toggleWeek12Lock = () => {
     setSaved(false);
     if (week12AllLocked) {
-      setWeeks(weeks.map((w) => (week12Ids.includes(w.id) ? { ...w, locked: false } : w)));
+      setWeeks(
+        weeks.map((w) =>
+          week12Ids.includes(w.id) || week6Ids.includes(w.id)
+            ? { ...w, locked: false }
+            : w,
+        ),
+      );
     } else {
-      // Locking should never force week selection; preserve existing enabled states.
-      setWeeks(weeks.map((w) => (week12Ids.includes(w.id) ? { ...w, locked: true } : w)));
+      // When locking Weeks 7–12, Weeks 1–6 must also remain locked.
+      setWeeks(
+        weeks.map((w) =>
+          week12Ids.includes(w.id) || week6Ids.includes(w.id)
+            ? { ...w, locked: true }
+            : w,
+        ),
+      );
     }
   };
 
@@ -253,9 +270,16 @@ export default function ConfigPage() {
                   <button
                     type="button"
                     onClick={toggleWeek6Lock}
+                    disabled={week12AllLocked}
                     data-locked={String(week6AllLocked)}
                     className="config-milestone-badge"
-                    title={week6AllLocked ? "Click to unlock Weeks 1–6" : "Click to lock Weeks 1–6"}
+                    title={
+                      week12AllLocked
+                        ? "Week 6 lock is forced by Week 12 lock"
+                        : week6AllLocked
+                        ? "Click to unlock Weeks 1–6"
+                        : "Click to lock Weeks 1–6"
+                    }
                   >
                     {week6AllLocked ? "Locked" : "Unlocked"}
                   </button>
