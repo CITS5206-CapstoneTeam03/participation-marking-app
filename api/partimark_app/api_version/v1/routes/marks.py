@@ -16,6 +16,19 @@ router = APIRouter()
 
 @router.post("/", response_model=MarkResponse, status_code=status.HTTP_201_CREATED)
 def create_mark(mark_in: MarkCreate, db: Session = Depends(get_db)):
+    # check week 6 & 12 lock
+    if crud_system_config.is_week6_lock_enabled(db) and mark_in.week_number <= 6:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Updating marks for Week 6 is currently locked.",
+        )
+    
+    if crud_system_config.is_week12_lock_enabled(db) and 6 < mark_in.week_number <= 12:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Updating marks for Week 12 is currently locked.",
+        )
+
     enabled_week = crud_enabled_weeks.get_enabled_week(db, mark_in.week_number)
     if not enabled_week:
         raise HTTPException(
@@ -235,7 +248,33 @@ def update_mark(mark_id: int, mark_update: MarkUpdate, db: Session = Depends(get
             detail="Mark not found.",
         )
 
+    # check week 6 & 12 lock for current data
+    if crud_system_config.is_week6_lock_enabled(db) and db_mark.week_number <= 6:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Updating marks for Week 6 is currently locked.",
+        )
+    
+    if crud_system_config.is_week12_lock_enabled(db) and 6 < db_mark.week_number <= 12:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Updating marks for Week 12 is currently locked.",
+        )
+
     update_data = mark_update.model_dump(exclude_unset=True)
+    if update_data.week_number:
+        # check week 6 & 12 lock for update data
+        if crud_system_config.is_week6_lock_enabled(db) and update_data.week_number <= 6:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Updating marks for Week 6 is currently locked.",
+            )
+        
+        if crud_system_config.is_week12_lock_enabled(db) and 6 < update_data.week_number <= 12:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Updating marks for Week 12 is currently locked.",
+            )
 
     if "week_number" in update_data:
         enabled_week = crud_enabled_weeks.get_enabled_week(db, update_data["week_number"])
@@ -257,6 +296,19 @@ def delete_mark(mark_id: int, db: Session = Depends(get_db)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Mark not found.",
         )
+
+    # check week 6 & 12 lock for current data
+    if crud_system_config.is_week6_lock_enabled(db) and mark.week_number <= 6:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Updating marks for Week 6 is currently locked.",
+        )
+    
+    if crud_system_config.is_week12_lock_enabled(db) and 6 < mark.week_number <= 12:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Updating marks for Week 12 is currently locked.",
+        )    
 
     crud_marks.delete_mark(db, db_mark=mark)
     return None
