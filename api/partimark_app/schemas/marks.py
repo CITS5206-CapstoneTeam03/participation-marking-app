@@ -13,7 +13,6 @@ class MarkBase(BaseModel):
     workshop_id: int
     week_number: int = Field(..., ge=1, description="The enabled teaching week number")
     score: int = Field(..., ge=0, le=3, description="Participation score from 0 to 3")
-    marked_by_user_id: str = Field(..., max_length=50)
 
 
 #
@@ -36,7 +35,6 @@ class MarkUpdate(BaseModel):
     workshop_id: Optional[int] = None
     week_number: Optional[int] = Field(None, ge=1)
     score: Optional[int] = Field(None, ge=0, le=3)
-    marked_by_user_id: Optional[str] = Field(None, max_length=50)
 
 
 #
@@ -47,6 +45,7 @@ class MarkInDBBase(MarkBase):
     mark_id: int
     marked_at: datetime
     updated_at: Optional[datetime] = None
+    marked_by_user_id: str = Field(..., max_length=50)
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -76,5 +75,4 @@ class MarkBatchRequestItem(BaseModel):
 
 class MarkBatchRequest(BaseModel):
     """Schema for the complete batch request."""
-    marked_by_user_id: str = Field(..., max_length=50)
     marks: List[MarkBatchRequestItem]

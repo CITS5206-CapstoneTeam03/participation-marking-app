@@ -10,12 +10,18 @@ from ....crud import crud_marks as crud_marks #type:ignore
 from ....crud import crud_enabled_weeks as crud_enabled_weeks #type:ignore
 from ....crud import crud_system_config as crud_system_config #type:ignore
 from ....services import csv_export #type:ignore
+from ....core.deps import get_non_admin_user #type: ignore
+from ....models.users import User #type: ignore
 
 router = APIRouter()
 
 
 @router.post("/", response_model=MarkResponse, status_code=status.HTTP_201_CREATED)
-def create_mark(mark_in: MarkCreate, db: Session = Depends(get_db)):
+def create_mark(
+    mark_in: MarkCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_non_admin_user),
+):
     # check week 6 & 12 lock
     if crud_system_config.is_week6_lock_enabled(db) and mark_in.week_number <= 6:
         raise HTTPException(
@@ -48,6 +54,7 @@ def create_mark(mark_in: MarkCreate, db: Session = Depends(get_db)):
         )
 
     mark_data = mark_in.model_dump()
+    mark_data["marked_by_user_id"] = current_user.user_id
     new_mark = crud_marks.create_mark(db, mark_data=mark_data)
     return new_mark
 
@@ -58,6 +65,7 @@ def batch_create_workshop_marks(
     week_number: int,
     marks_in: MarkBatchRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_non_admin_user),
 ):
     # check week 6 & 12 lock
     if crud_system_config.is_week6_lock_enabled(db) and week_number <= 6:
@@ -111,7 +119,7 @@ def batch_create_workshop_marks(
             "workshop_id": workshop_id,
             "week_number": week_number,
             "score": mark.score,
-            "marked_by_user_id": marks_in.marked_by_user_id,
+            "marked_by_user_id": current_user.user_id,
         }
         for mark in marks_in.marks
     ]
@@ -184,6 +192,7 @@ def batch_update_workshop_marks(
     week_number: int,
     marks_in: MarkBatchRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_non_admin_user),
 ):
     if crud_system_config.is_week6_lock_enabled(db) and week_number <= 6:
         raise HTTPException(
@@ -223,7 +232,7 @@ def batch_update_workshop_marks(
         {
             "student_id": mark.student_id,
             "score": mark.score,
-            "marked_by_user_id": marks_in.marked_by_user_id,
+            "marked_by_user_id": current_user.user_id,
             "week_number": week_number,
         }
         for mark in marks_in.marks
@@ -240,7 +249,12 @@ def batch_update_workshop_marks(
 
 
 @router.patch("/{mark_id}", response_model=MarkResponse)
-def update_mark(mark_id: int, mark_update: MarkUpdate, db: Session = Depends(get_db)):
+def update_mark(
+    mark_id: int,
+    mark_update: MarkUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_non_admin_user),
+):
     db_mark = crud_marks.get_mark(db, mark_id=mark_id)
     if not db_mark:
         raise HTTPException(
@@ -262,15 +276,16 @@ def update_mark(mark_id: int, mark_update: MarkUpdate, db: Session = Depends(get
         )
 
     update_data = mark_update.model_dump(exclude_unset=True)
-    if update_data.week_number:
+    update_data["marked_by_user_id"] = current_user.user_id
+    if update_data.get("week_number"):
         # check week 6 & 12 lock for update data
-        if crud_system_config.is_week6_lock_enabled(db) and update_data.week_number <= 6:
+        if crud_system_config.is_week6_lock_enabled(db) and update_data.get("week_number") <= 6:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Updating marks for Week 6 is currently locked.",
             )
         
-        if crud_system_config.is_week12_lock_enabled(db) and 6 < update_data.week_number <= 12:
+        if crud_system_config.is_week12_lock_enabled(db) and 6 < update_data.get("week_number") <= 12:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Updating marks for Week 12 is currently locked.",
