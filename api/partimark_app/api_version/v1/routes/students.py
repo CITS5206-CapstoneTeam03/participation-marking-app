@@ -4,11 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from ....db.db import get_db
-from ....schemas.students import StudentCreate, StudentResponse, StudentUpdate
-from ....crud import crud_students as crud_students
-from ....crud import crud_student_workshop_memberships as crud_memberships
-from ....crud import crud_workshops as crud_workshops
+from ....db.db import get_db #type:ignore
+from ....schemas.students import StudentCreate, StudentResponse, StudentUpdate #type:ignore
+from ....crud import crud_students as crud_students  # type: ignore
+from ....crud import crud_student_workshop_memberships as crud_memberships  # type: ignore
+from ....crud import crud_workshops as crud_workshops  # type: ignore
 
 router = APIRouter()
 

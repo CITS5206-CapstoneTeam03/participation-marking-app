@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 class UserRole(str, enum.Enum):
     UC = "UC"
     TUTOR = "tutor"
+    ADMIN = "admin"
 
 
 class User(Base):

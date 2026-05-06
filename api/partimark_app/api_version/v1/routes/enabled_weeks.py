@@ -4,9 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from ....db.db import get_db
-from ....schemas.enabled_weeks import EnabledWeekCreate, EnabledWeekResponse
-from ....crud import crud_enabled_weeks as crud
+from ....db.db import get_db #type:ignore
+from ....schemas.enabled_weeks import EnabledWeekCreate, EnabledWeekResponse #type:ignore
+from ....crud import crud_enabled_weeks as crud #type:ignore
 
 router = APIRouter()
 
