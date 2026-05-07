@@ -9,6 +9,7 @@ from ....schemas.marks import MarkCreate, MarkResponse, MarkUpdate, MarkBatchReq
 from ....crud import crud_marks as crud_marks #type:ignore
 from ....crud import crud_enabled_weeks as crud_enabled_weeks #type:ignore
 from ....crud import crud_system_config as crud_system_config #type:ignore
+from ....crud import crud_student_workshop_memberships as crud_swm #type: ignore
 from ....core.deps import get_non_admin_user #type: ignore
 from ....models.users import User #type: ignore
 from ....models.students import StudentStatus #type: ignore
@@ -43,6 +44,14 @@ def create_mark(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="This week is not enabled for participation marking.",
+        )
+
+    # Verify student belongs to workshop
+    memberships = crud_swm.get_current_memberships_by_student(db, mark_in.student_id)
+    if mark_in.workshop_id not in [m.workshop_id for m in memberships]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Student {mark_in.student_id} is not a member of workshop {mark_in.workshop_id}.",
         )
 
     existing_mark = crud_marks.get_mark_by_student_and_week(
@@ -104,6 +113,16 @@ def batch_create_workshop_marks(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Batch create must contain one mark per student.",
+        )
+
+    # Verify students belong to workshop
+    workshop_memberships = crud_swm.get_current_memberships_by_workshop(db, workshop_id)
+    enrolled_student_ids = {m.student_id for m in workshop_memberships}
+    invalid_students = [sid for sid in student_ids if sid not in enrolled_student_ids]
+    if invalid_students:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"The following students are not members of workshop {workshop_id}: {', '.join(invalid_students)}.",
         )
 
     #check if marks already exist for any of the students
@@ -287,6 +306,17 @@ def batch_update_workshop_marks(
             detail="This week is not enabled for participation marking.",
         )
 
+    # Verify students belong to workshop
+    workshop_memberships = crud_swm.get_current_memberships_by_workshop(db, workshop_id)
+    enrolled_student_ids = {m.student_id for m in workshop_memberships}
+    student_ids = [mark.student_id for mark in marks_in.marks]
+    invalid_students = [sid for sid in student_ids if sid not in enrolled_student_ids]
+    if invalid_students:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"The following students are not members of workshop {workshop_id}: {', '.join(invalid_students)}.",
+        )
+
     existing_marks = crud_marks.get_marks_by_workshop_and_week(
         db,
         workshop_id=workshop_id,
@@ -369,6 +399,16 @@ def update_mark(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="This week is not enabled for participation marking.",
             )
+
+    # Verify target student belongs to target workshop
+    target_student_id = update_data.get("student_id", db_mark.student_id)
+    target_workshop_id = update_data.get("workshop_id", db_mark.workshop_id)
+    memberships = crud_swm.get_current_memberships_by_student(db, target_student_id)
+    if target_workshop_id not in [m.workshop_id for m in memberships]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Student {target_student_id} is not a member of workshop {target_workshop_id}.",
+        )
 
     updated_mark = crud_marks.update_mark(db, db_mark=db_mark, update_data=update_data)
     return updated_mark
