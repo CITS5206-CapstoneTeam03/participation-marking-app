@@ -9,9 +9,9 @@ from ....schemas.marks import MarkCreate, MarkResponse, MarkUpdate, MarkBatchReq
 from ....crud import crud_marks as crud_marks #type:ignore
 from ....crud import crud_enabled_weeks as crud_enabled_weeks #type:ignore
 from ....crud import crud_system_config as crud_system_config #type:ignore
-from ....services import csv_export #type:ignore
 from ....core.deps import get_non_admin_user #type: ignore
-from ....models.users import User, StudentStatus #type: ignore
+from ....models.users import User #type: ignore
+from ....models.students import StudentStatus #type: ignore
 from ....services.csv import csv_export, csv_import #type: ignore
 from ....crud import crud_students as crud_students #type: ignore
 from ....crud.csv_export import calculate_total_and_percent_mark, calculate_w6_total_and_percent_mark #type: ignore

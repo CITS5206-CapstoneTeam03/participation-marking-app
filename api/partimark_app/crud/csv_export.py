@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from crud.crud_marks import get_all_sum_marks, get_all_6w_sum_marks
-from crud.crud_system_config import get_current_system_config
+from .crud_marks import get_all_sum_marks, get_all_6w_sum_marks
+from .crud_system_config import get_current_system_config
 
 
 def calculate_total_and_percent_mark(db: Session) -> dict[tuple[str,str,str], tuple[float, float]]:
