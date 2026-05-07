@@ -1,4 +1,3 @@
-from api.partimark_app.models import StudentStatus
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
@@ -6,13 +5,13 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from ....db.db import get_db #type:ignore
-from ....schemas.marks import MarkCreate, MarkResponse, MarkUpdate, MarkBatchRequest, MarkBatchRequestItem #type:ignore
+from ....schemas.marks import MarkCreate, MarkResponse, MarkUpdate, MarkBatchRequest #type:ignore
 from ....crud import crud_marks as crud_marks #type:ignore
 from ....crud import crud_enabled_weeks as crud_enabled_weeks #type:ignore
 from ....crud import crud_system_config as crud_system_config #type:ignore
 from ....services import csv_export #type:ignore
 from ....core.deps import get_non_admin_user #type: ignore
-from ....models.users import User #type: ignore
+from ....models.users import User, StudentStatus #type: ignore
 from ....services.csv import csv_export, csv_import #type: ignore
 from ....crud import crud_students as crud_students #type: ignore
 from ....crud.csv_export import calculate_total_and_percent_mark, calculate_w6_total_and_percent_mark #type: ignore
