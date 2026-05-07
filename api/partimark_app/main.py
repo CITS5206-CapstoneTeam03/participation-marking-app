@@ -2,11 +2,11 @@ from fastapi import Depends, FastAPI, APIRouter, HTTPException
 from sqlalchemy.orm import Session
 from sqladmin import Admin
 
-from .db.db import get_db, engine
-from .models.users import User
-from .admin.views import UserAdmin
-from .api_version.v1.api import api_router
-from .services.logic_app.logicApp import router as logic_router
+from partimark_app.db.db import get_db, engine
+from partimark_app.models.users import User
+from partimark_app.admin.views import all_admin_views
+from partimark_app.api_version.v1.api import api_router
+from partimark_app.services.logic_app.logicApp import router as logic_router
 
 # ==========================================
 # 1. Swagger UI Metadata Best Practices
@@ -44,9 +44,8 @@ app.include_router(logic_router)
 # Configure the Admin interface
 admin = Admin(app, engine)
 
-
-
-admin.add_view(UserAdmin)
+for view in all_admin_views:
+    admin.add_view(view)
 
 router = APIRouter(prefix="/api")
 

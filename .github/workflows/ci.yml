@@ -20,13 +20,13 @@ jobs:
           source antenv/bin/activate
           cd api
           pip install -r requirements.txt
-      # TODO: Implement migration check against the current version of the 'main' branch
-      # - name: Check Database Migrations
-      #   run: |
-      #     source antenv/bin/activate
-      #     cd api
-      #     alembic current
-      #     alembic upgrade head
+          
+      - name: Check Database Migrations
+        run: |
+          source antenv/bin/activate
+          cd api
+          alembic current
+          alembic upgrade head
       
       - name: Run tests
         run: |

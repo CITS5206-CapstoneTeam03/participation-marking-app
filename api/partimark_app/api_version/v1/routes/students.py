@@ -4,11 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from ....db.db import get_db
-from ....schemas.students import StudentCreate, StudentResponse, StudentUpdate
-from ....crud import crud_students as crud_students
-from ....crud import crud_student_workshop_memberships as crud_memberships
-from ....crud import crud_workshops as crud_workshops
+from ....db.db import get_db #type:ignore
+from ....schemas.students import StudentCreate, StudentResponse, StudentUpdate #type:ignore
+from ....crud import crud_students as crud_students  # type: ignore
+from ....crud import crud_student_workshop_memberships as crud_memberships  # type: ignore
+from ....crud import crud_workshops as crud_workshops  # type: ignore
 
 router = APIRouter()
 
@@ -117,12 +117,31 @@ def move_student(
             detail="Target workshop not found.",
         )
 
-    new_membership = crud_memberships.move_student_to_workshop(
-        db=db,
+    current_memberships = crud_memberships.get_current_memberships_by_student(
+        db,
         student_id=student_id,
-        target_workshop_id=move_request.target_workshop_id,
-        created_by_user_id=move_request.created_by_user_id,
     )
+    if any(
+        membership.workshop_id == move_request.target_workshop_id
+        for membership in current_memberships
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Student is already assigned to the target workshop.",
+        )
+
+    try:
+        new_membership = crud_memberships.move_student_to_workshop(
+            db=db,
+            student_id=student_id,
+            target_workshop_id=move_request.target_workshop_id,
+            created_by_user_id=move_request.created_by_user_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
 
     return {
         "message": "Student moved successfully.",
@@ -130,6 +149,9 @@ def move_student(
         "student_id": new_membership.student_id,
         "workshop_id": new_membership.workshop_id,
         "is_current": new_membership.is_current,
+        "previous_workshop_ids": [
+            membership.workshop_id for membership in current_memberships
+        ],
     }
 
 

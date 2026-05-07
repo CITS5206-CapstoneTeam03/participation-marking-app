@@ -4,9 +4,9 @@ import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from ....db.db import get_db
-from ....schemas.users import UserCreate, UserResponse, UserUpdate
-from ....crud import crud_users as crud
+from ....db.db import get_db #type:ignore
+from ....schemas.users import UserCreate, UserResponse, UserUpdate #type:ignore
+from ....crud import crud_users as crud #type:ignore
 
 router = APIRouter()
 
