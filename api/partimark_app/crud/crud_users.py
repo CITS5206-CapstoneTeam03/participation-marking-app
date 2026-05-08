@@ -6,7 +6,6 @@ from ..models.users import User, UserRole
 from ..crud.crud_audit_logs import create_audit_log
 from ..schemas.audit_logs import AuditLogCreate
 
-#TO DO: update user ID when merge PR, retrieve user_id from auth payload
 
 actions = [
     "create_user",
@@ -46,6 +45,8 @@ def get_users_by_role(
     )
 
 
+# TO DO: Remove the default user_id="UC" and require the authenticated user_id
+# once the public vs admin registration flow is finalized.
 def create_user(db: Session, user_data: dict, user_id: str = "UC") -> User:
     """Create a new user in the database."""
     new_user = User(**user_data)
@@ -64,7 +65,7 @@ def create_user(db: Session, user_data: dict, user_id: str = "UC") -> User:
 
 
 
-def update_user(db: Session, db_user: User, update_data: dict, user_id: str = "UC") -> User:
+def update_user(db: Session, db_user: User, update_data: dict, user_id: str) -> User:
     """Update an existing user in the database."""
     audit_in = AuditLogCreate(
         user_id=user_id,
@@ -82,7 +83,7 @@ def update_user(db: Session, db_user: User, update_data: dict, user_id: str = "U
 
 
 
-def deactivate_user(db: Session, db_user: User, user_id: str = "UC") -> User:
+def deactivate_user(db: Session, db_user: User, user_id: str) -> User:
     """Soft-delete/deactivate a user."""
     audit_in = AuditLogCreate(
         user_id=user_id,
@@ -98,7 +99,7 @@ def deactivate_user(db: Session, db_user: User, user_id: str = "UC") -> User:
 
 
 
-def delete_user(db: Session, db_user: User, user_id: str = "UC") -> None:
+def delete_user(db: Session, db_user: User, user_id: str) -> None:
     """Delete a user from the database."""
     audit_in = AuditLogCreate(
         user_id=user_id,

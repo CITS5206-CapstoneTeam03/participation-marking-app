@@ -61,7 +61,7 @@ def create_system_config(
             )
 
     config_data = config_in.model_dump()
-    new_config = crud.create_system_config(db, config_data=config_data)
+    new_config = crud.create_system_config(db, config_data=config_data, user_id=current_user.user_id)
     return new_config
 
 
@@ -106,5 +106,6 @@ def update_current_system_config(
         db,
         db_config=db_config,
         update_data=update_data,
+        user_id=current_user.user_id,
     )
     return updated_config

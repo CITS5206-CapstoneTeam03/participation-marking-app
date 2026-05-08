@@ -13,7 +13,6 @@ actions = [
     "replace_week"
 ]
 
-#TO DO: replace user ID with the one in auth payload, will do after merge
 
 def get_enabled_week(db: Session, week_number: int) -> Optional[EnabledWeek]:
     """Retrieve one enabled week by week number."""
@@ -29,7 +28,7 @@ def get_enabled_weeks(db: Session) -> List[EnabledWeek]:
     return db.query(EnabledWeek).order_by(EnabledWeek.week_number.asc()).all()
 
 
-def create_enabled_week(db: Session, week_data: dict, user_id: str = "UC") -> EnabledWeek:
+def create_enabled_week(db: Session, week_data: dict, user_id: str) -> EnabledWeek:
     """Create one enabled week."""
     enabled_week = EnabledWeek(**week_data)
 
@@ -48,7 +47,7 @@ def create_enabled_week(db: Session, week_data: dict, user_id: str = "UC") -> En
 
 
 
-def create_enabled_weeks_bulk(db: Session, weeks_data: List[dict], user_id: str = "UC") -> List[EnabledWeek]:
+def create_enabled_weeks_bulk(db: Session, weeks_data: List[dict], user_id: str) -> List[EnabledWeek]:
     """Create multiple enabled weeks."""
     enabled_weeks = [EnabledWeek(**data) for data in weeks_data]
 
@@ -69,7 +68,7 @@ def create_enabled_weeks_bulk(db: Session, weeks_data: List[dict], user_id: str 
 
 
 
-def replace_enabled_weeks(db: Session, week_numbers: List[int], user_id: str = "UC") -> List[EnabledWeek]:
+def replace_enabled_weeks(db: Session, week_numbers: List[int], user_id: str) -> List[EnabledWeek]:
     """
     Replace all enabled weeks with a new set.
 
@@ -96,7 +95,7 @@ def replace_enabled_weeks(db: Session, week_numbers: List[int], user_id: str = "
 
 
 
-def delete_enabled_week(db: Session, db_enabled_week: EnabledWeek, user_id: str = "UC") -> None:
+def delete_enabled_week(db: Session, db_enabled_week: EnabledWeek, user_id: str) -> None:
     """Delete one enabled week."""
     audit_in = AuditLogCreate(
         user_id=user_id,

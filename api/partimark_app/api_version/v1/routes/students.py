@@ -9,7 +9,8 @@ from ....schemas.students import StudentCreate, StudentResponse, StudentUpdate #
 from ....crud import crud_students as crud_students  # type: ignore
 from ....crud import crud_student_workshop_memberships as crud_memberships  # type: ignore
 from ....crud import crud_workshops as crud_workshops  # type: ignore
-
+from ....core.deps import get_current_user #type: ignore
+from ....models.users import User #type: ignore
 router = APIRouter()
 
 
@@ -19,7 +20,11 @@ class MoveStudentRequest(BaseModel):
 
 
 @router.post("/", response_model=StudentResponse, status_code=status.HTTP_201_CREATED)
-def create_student(student_in: StudentCreate, db: Session = Depends(get_db)):
+def create_student(
+    student_in: StudentCreate, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     existing_student = crud_students.get_student(db, student_id=student_in.student_id)
     if existing_student:
         raise HTTPException(
@@ -35,7 +40,7 @@ def create_student(student_in: StudentCreate, db: Session = Depends(get_db)):
         )
 
     student_data = student_in.model_dump()
-    new_student = crud_students.create_student(db, student_data=student_data)
+    new_student = crud_students.create_student(db, student_data=student_data, user_id=current_user.user_id)
     return new_student
 
 
@@ -60,6 +65,7 @@ def update_student(
     student_id: str,
     student_update: StudentUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     student = crud_students.get_student(db, student_id=student_id)
     if not student:
@@ -79,13 +85,17 @@ def update_student(
             )
 
     updated_student = crud_students.update_student(
-        db, db_student=student, update_data=update_data
+        db, db_student=student, update_data=update_data, user_id=current_user.user_id
     )
     return updated_student
 
 
 @router.patch("/{student_id}/withdraw", response_model=StudentResponse)
-def withdraw_student(student_id: str, db: Session = Depends(get_db)):
+def withdraw_student(
+    student_id: str, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     student = crud_students.get_student(db, student_id=student_id)
     if not student:
         raise HTTPException(
@@ -93,7 +103,7 @@ def withdraw_student(student_id: str, db: Session = Depends(get_db)):
             detail="Student not found.",
         )
 
-    withdrawn_student = crud_students.withdraw_student(db, db_student=student)
+    withdrawn_student = crud_students.withdraw_student(db, db_student=student, user_id=current_user.user_id)
     return withdrawn_student
 
 
@@ -156,7 +166,11 @@ def move_student(
 
 
 @router.delete("/{student_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_student(student_id: str, db: Session = Depends(get_db)):
+def delete_student(
+    student_id: str, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     student = crud_students.get_student(db, student_id=student_id)
     if not student:
         raise HTTPException(
@@ -164,5 +178,5 @@ def delete_student(student_id: str, db: Session = Depends(get_db)):
             detail="Student not found.",
         )
 
-    crud_students.delete_student(db, db_student=student)
+    crud_students.delete_student(db, db_student=student, user_id=current_user.user_id)
     return None

@@ -9,7 +9,10 @@ from ..schemas.audit_logs import AuditLogCreate
 
 actions = [
     "create_mark",
-    "update_mark"
+    "update_mark",
+    "batch_create_marks",
+    "batch_update_marks",
+    "delete_mark"
 ]
 
 def get_mark(db: Session, mark_id: int) -> Optional[ParticipationMark]:
@@ -106,17 +109,15 @@ def batch_create_marks(db: Session, marks_data: List[dict]) -> List[Participatio
     """Efficiently create multiple marks in bulk."""
     db_marks = [ParticipationMark(**data) for data in marks_data]
 
-    # TO DO: wait until main merge
-    # audit_in = AuditLogCreate(
-    #     user_id=marks_data.,
-    #     action_type=actions[0],
-    #     description=f"Created mark for student {new_mark.student_id}",
-    #     student_id=new_mark.student_id,
-    #     workshop_id=new_mark.workshop_id,
-    #     week_number=new_mark.week_number
-    # )
-
-    # create_audit_log(db, log_data=audit_in.model_dump())
+    if marks_data:
+        audit_in = AuditLogCreate(
+            user_id=marks_data[0].get("marked_by_user_id"),
+            action_type=actions[2],
+            description=f"Batch created marks for workshop {marks_data[0].get('workshop_id')} in week {marks_data[0].get('week_number')}",
+            workshop_id=marks_data[0].get("workshop_id"),
+            week_number=marks_data[0].get("week_number")
+        )
+        create_audit_log(db, log_data=audit_in.model_dump())
 
     db.add_all(db_marks)
     db.commit()
@@ -127,6 +128,7 @@ def batch_create_marks(db: Session, marks_data: List[dict]) -> List[Participatio
 
 def update_mark(db: Session, db_mark: ParticipationMark, update_data: dict) -> ParticipationMark:
     """Update a single participation mark."""
+    old_score = db_mark.score
     for key, value in update_data.items():
         if key in ("mark_id",) or value is None:
             continue
@@ -134,16 +136,15 @@ def update_mark(db: Session, db_mark: ParticipationMark, update_data: dict) -> P
     db.commit()
     db.refresh(db_mark)
 
-    
     audit_in = AuditLogCreate(
-        user_id=update_data.marked_by_user_id,
+        user_id=update_data.get("marked_by_user_id"),
         action_type=actions[1],
-        description=f"Updated mark for student {update_data.student_id}",
-        student_id=update_data.student_id,
-        workshop_id=update_data.workshop_id,
-        week_number=update_data.week_number,
-        old_value=str(db_mark.score),
-        new_value=str(update_data.score)
+        description=f"Updated mark for student {db_mark.student_id}",
+        student_id=db_mark.student_id,
+        workshop_id=db_mark.workshop_id,
+        week_number=db_mark.week_number,
+        old_value=str(old_score),
+        new_value=str(db_mark.score)
     )
 
     create_audit_log(db, log_data=audit_in.model_dump())
@@ -194,15 +195,36 @@ def batch_update_marks(
         if is_changed:
             updated_marks.append(db_mark)
 
-    if updated_marks:
+    if updated_marks and updates_data:
         db.commit()
         for mark in updated_marks:
             db.refresh(mark)
 
+        audit_in = AuditLogCreate(
+            user_id=updates_data[0].get("marked_by_user_id"),
+            action_type=actions[3],
+            description=f"Batch updated marks for workshop {workshop_id} in week {updates_data[0].get('week_number')}",
+            workshop_id=workshop_id,
+            week_number=updates_data[0].get("week_number")
+        )
+
+        create_audit_log(db, log_data=audit_in.model_dump())
+
     return updated_marks
 
 
-def delete_mark(db: Session, db_mark: ParticipationMark) -> None:
+def delete_mark(db: Session, db_mark: ParticipationMark, user_id: str) -> None:
     """Delete a participation mark from the database."""
+    audit_in = AuditLogCreate(
+        user_id=user_id,
+        action_type=actions[4],
+        description=f"Deleted mark for student {db_mark.student_id}",
+        student_id=db_mark.student_id,
+        workshop_id=db_mark.workshop_id,
+        week_number=db_mark.week_number,
+        old_value=str(db_mark.score)
+    )
+    create_audit_log(db, log_data=audit_in.model_dump())
+
     db.delete(db_mark)
     db.commit()

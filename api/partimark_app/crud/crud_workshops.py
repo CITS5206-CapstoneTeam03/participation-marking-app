@@ -15,8 +15,6 @@ actions = [
     "delete_workshop"
 ]
 
-
-
 def get_workshop_by_name(db: Session, workshop_name: str) -> Optional[Workshop]:
     """Retrieve a workshop by its name."""
     return db.query(Workshop).filter(Workshop.workshop_name == workshop_name).first()
@@ -48,7 +46,7 @@ def get_workshops_by_tutor(
     )
 
 
-def create_workshop(db: Session, workshop_data: dict, user_id: str = "UC") -> Workshop:
+def create_workshop(db: Session, workshop_data: dict, user_id: str) -> Workshop:
     """Create a new workshop in the database."""
     new_workshop = Workshop(**workshop_data)
 
@@ -66,7 +64,7 @@ def create_workshop(db: Session, workshop_data: dict, user_id: str = "UC") -> Wo
     return new_workshop
 
 
-def update_workshop(db: Session, db_workshop: Workshop, update_data: dict, user_id: str = "UC") -> Workshop:
+def update_workshop(db: Session, db_workshop: Workshop, update_data: dict, user_id: str) -> Workshop:
     """Update an existing workshop in the database."""
     audit_in = AuditLogCreate(
         user_id=user_id,
@@ -84,7 +82,7 @@ def update_workshop(db: Session, db_workshop: Workshop, update_data: dict, user_
     return db_workshop
 
 
-def deactivate_workshop(db: Session, db_workshop: Workshop, user_id: str = "UC") -> Workshop:
+def deactivate_workshop(db: Session, db_workshop: Workshop, user_id: str) -> Workshop:
     """Soft-delete/deactivate a workshop."""
     audit_in = AuditLogCreate(
         user_id=user_id,
@@ -100,7 +98,7 @@ def deactivate_workshop(db: Session, db_workshop: Workshop, user_id: str = "UC")
     return db_workshop
 
 
-def delete_workshop(db: Session, db_workshop: Workshop, user_id: str = "UC") -> None:
+def delete_workshop(db: Session, db_workshop: Workshop, user_id: str) -> None:
     """Delete a workshop from the database."""
     audit_in = AuditLogCreate(
         user_id=user_id,

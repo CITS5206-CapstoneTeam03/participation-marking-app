@@ -6,7 +6,6 @@ from ..models.students import Student, StudentStatus
 from ..crud.crud_audit_logs import create_audit_log
 from ..schemas.audit_logs import AuditLogCreate
 
-#TO DO: update user ID when merge PR, retrieve user_id from auth payload
 
 actions = [
     "create_student",
@@ -46,7 +45,7 @@ def get_students_by_status(
     )
 
 
-def create_student(db: Session, student_data: dict, user_id: str = "LogicApp") -> Student:
+def create_student(db: Session, student_data: dict, user_id: str) -> Student:
     """Create a new student in the database."""
     new_student = Student(**student_data)
 
@@ -65,7 +64,7 @@ def create_student(db: Session, student_data: dict, user_id: str = "LogicApp") -
 
 
 
-def update_student(db: Session, db_student: Student, update_data: dict, user_id: str = "UC") -> Student:
+def update_student(db: Session, db_student: Student, update_data: dict, user_id: str) -> Student:
     """Update an existing student in the database."""
     audit_in = AuditLogCreate(
         user_id=user_id,
@@ -84,7 +83,7 @@ def update_student(db: Session, db_student: Student, update_data: dict, user_id:
 
 
 
-def withdraw_student(db: Session, db_student: Student, user_id: str = "UC") -> Student:
+def withdraw_student(db: Session, db_student: Student, user_id: str) -> Student:
     """Mark a student as withdrawn instead of deleting the record."""
     audit_in = AuditLogCreate(
         user_id=user_id,
@@ -101,7 +100,7 @@ def withdraw_student(db: Session, db_student: Student, user_id: str = "UC") -> S
 
 
 
-def reactivate_student(db: Session, db_student: Student, user_id: str = "UC") -> Student:
+def reactivate_student(db: Session, db_student: Student, user_id: str) -> Student:
     """Mark a withdrawn student back to active if needed."""
     audit_in = AuditLogCreate(
         user_id=user_id,
@@ -118,7 +117,7 @@ def reactivate_student(db: Session, db_student: Student, user_id: str = "UC") ->
 
 
 
-def delete_student(db: Session, db_student: Student, user_id: str = "UC") -> None:
+def delete_student(db: Session, db_student: Student, user_id: str) -> None:
     """Delete a student from the database."""
     audit_in = AuditLogCreate(
         user_id=user_id,
