@@ -18,6 +18,12 @@ class Settings(BaseSettings):
     # FastAPI Application Settings
     app_name: str = "PartiMark API"
     version: str = "1.0.0"
+
+    # PASETO / Auth Settings
+    # Generate a strong secret with: python -c "import secrets; print(secrets.token_hex(32))"
+    # Add PASETO_SECRET_KEY=<value> to your .env file.
+    paseto_secret_key: str
+    access_token_expire_minutes: int = 60  # 1 hour default
     
     # You can map env variables regardless of case
     model_config = SettingsConfigDict(

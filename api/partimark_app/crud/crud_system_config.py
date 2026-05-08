@@ -8,6 +8,7 @@ from ..schemas.audit_logs import AuditLogCreate
 
 #TO DO: update user ID when merge PR, retrieve user_id from auth payload
 
+#TO DO: Refactor to extract the user's role from session-based or token-based (PASETO/JWT) authentication, and use that role to determine access permissions for these CRUD operations.
 actions = [
     "config_sys",
     "modify_config",
@@ -30,6 +31,22 @@ def get_current_system_config(db: Session) -> Optional[SystemConfig]:
     Schema V3 assumes the table should contain a single row for the current semester setup.
     """
     return db.query(SystemConfig).order_by(SystemConfig.config_id.asc()).first()
+
+
+def is_week6_lock_enabled(db: Session) -> bool:
+    """Return whether the Week 6 lock is enabled for the current config."""
+    db_config = get_current_system_config(db)
+    if db_config is None:
+        return False
+    return bool(db_config.week6_lock_enabled)
+
+
+def is_week12_lock_enabled(db: Session) -> bool:
+    """Return whether the Week 12 lock is enabled for the current config."""
+    db_config = get_current_system_config(db)
+    if db_config is None:
+        return False
+    return bool(db_config.week12_lock_enabled)
 
 
 def create_system_config(db: Session, config_data: dict) -> SystemConfig:

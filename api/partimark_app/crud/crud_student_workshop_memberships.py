@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import List, Optional
 
 from sqlalchemy.orm import Session
@@ -49,6 +49,21 @@ def get_current_membership_by_student(
             StudentWorkshopMembership.is_current.is_(True),
         )
         .first()
+    )
+
+
+def get_current_memberships_by_student(
+    db: Session,
+    student_id: str,
+) -> List[StudentWorkshopMembership]:
+    """Retrieve every current workshop membership for a student."""
+    return (
+        db.query(StudentWorkshopMembership)
+        .filter(
+            StudentWorkshopMembership.student_id == student_id,
+            StudentWorkshopMembership.is_current.is_(True),
+        )
+        .all()
     )
 
 
@@ -133,7 +148,7 @@ def close_current_membership(
     create_audit_log(db, log_data=audit_in.model_dump())
 
     db_membership.is_current = False
-    db_membership.end_date = end_date or datetime.utcnow()
+    db_membership.end_date = end_date or datetime.now(UTC)
     db.commit()
     db.refresh(db_membership)
     return db_membership
@@ -152,10 +167,16 @@ def move_student_to_workshop(
 
     This closes the current membership (if any) and creates a new current membership.
     """
-    move_time = move_time or datetime.utcnow()
+    move_time = move_time or datetime.now(UTC)
 
-    current_membership = get_current_membership_by_student(db, student_id)
-    if current_membership is not None:
+    current_memberships = get_current_memberships_by_student(db, student_id)
+    if any(
+        membership.workshop_id == target_workshop_id
+        for membership in current_memberships
+    ):
+        raise ValueError("Student is already assigned to the target workshop.")
+
+    for current_membership in current_memberships:
         current_membership.is_current = False
         current_membership.end_date = move_time
 

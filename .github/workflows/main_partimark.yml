@@ -80,6 +80,7 @@ jobs:
           DB_HOST: ${{ secrets.DB_HOST }}
           DB_NAME: ${{ secrets.DB_NAME }}
           SSL_CA: ${{ github.workspace }}/partimark_app/certs/DigiCertGlobalRootCA.crt.pem
+          PASETO_SECRET_KEY: ${{ secrets.PASETO_SECRET_KEY || 'dummy_secret_for_migration_only' }}
         run: python -m alembic upgrade head
       # ──────────────────────────────────────────────────────────────────
       
