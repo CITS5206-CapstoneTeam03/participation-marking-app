@@ -56,7 +56,7 @@ class ParticipationMark(Base):
         index=True,
     )
 
-    score: Mapped[float] = mapped_column(Float, nullable=False)
+    score: Mapped[int] = mapped_column(Integer, nullable=False)
 
     marked_by_user_id: Mapped[str] = mapped_column(
         String(50),
