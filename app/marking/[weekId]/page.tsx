@@ -1,4 +1,4 @@
-import { configWeeks } from "../data/mock-data";
+import { configWeeks } from "../../data/mock-data";
 import { MarkingView } from "./marking-view";
 
 export async function generateStaticParams() {

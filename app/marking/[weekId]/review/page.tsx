@@ -1,4 +1,4 @@
-import { configWeeks } from "../../data/mock-data";
+import { configWeeks } from "../../../data/mock-data";
 import { ReviewView } from "./review-view";
 
 export async function generateStaticParams() {
