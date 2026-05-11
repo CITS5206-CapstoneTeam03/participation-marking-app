@@ -23,7 +23,7 @@ class SystemConfig(Base):
     )
 
     max_weekly_score: Mapped[int] = mapped_column(Integer, nullable=False, default=3.0)
-    total_participation_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    total_participation_points: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=None)
 
     is_configured: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
