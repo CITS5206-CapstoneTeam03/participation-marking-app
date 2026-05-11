@@ -8,6 +8,7 @@ export default function StudentsPage() {
   const { workshops, workshopStudents, upsertWorkshopStudentsFromCsv } = useAppContext();
   const [search, setSearch] = useState("");
   const [isDragging, setIsDragging] = useState(false);
+  const [selectedWorkshopId, setSelectedWorkshopId] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const allStudents = useMemo(() => {
@@ -26,7 +27,7 @@ export default function StudentsPage() {
     return allStudents.filter(
       (s) =>
         s.studentId.toLowerCase().includes(q) ||
-        `${s.firstName} ${s.lastName}`.toLowerCase().includes(q) ||
+        `${s.preferredName ?? s.firstName} ${s.lastName}`.toLowerCase().includes(q) ||
         s.email.toLowerCase().includes(q),
     );
   }, [allStudents, search]);
@@ -59,22 +60,25 @@ export default function StudentsPage() {
     }).filter((s) => s.studentId && s.email);
   }
 
-  async function handleFile(file: File, workshopId: string) {
+  const targetWorkshopId = selectedWorkshopId || workshops[0]?.id;
+
+  async function handleFile(file: File) {
+    if (!targetWorkshopId) return;
     const text = await file.text();
     const students = parseCSV(text);
-    if (students) upsertWorkshopStudentsFromCsv(workshopId, students);
+    if (students) upsertWorkshopStudentsFromCsv(targetWorkshopId, students);
   }
 
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files[0];
-    if (file && workshops[0]) handleFile(file, workshops[0].id);
+    if (file) handleFile(file);
   }
 
   function handleFileInput(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (file && workshops[0]) handleFile(file, workshops[0].id);
+    if (file) handleFile(file);
   }
 
   function downloadTemplate() {
@@ -111,6 +115,33 @@ export default function StudentsPage() {
             <h2 className="section-card-title" style={{ margin: 0 }}>Import Students</h2>
           </div>
 
+          {/* Workshop selector */}
+          {workshops.length > 1 && (
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 13, fontWeight: 600, color: "#5a6a81", display: "block", marginBottom: 6 }}>
+                Import into workshop
+              </label>
+              <select
+                value={selectedWorkshopId || workshops[0]?.id}
+                onChange={(e) => setSelectedWorkshopId(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  borderRadius: 8,
+                  border: "1px solid #dbe3f1",
+                  fontSize: 14,
+                  color: "#33445f",
+                  background: "#fff",
+                  cursor: "pointer",
+                }}
+              >
+                {workshops.map((w) => (
+                  <option key={w.id} value={w.id}>{w.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Drop zone */}
           <div
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
@@ -135,9 +166,9 @@ export default function StudentsPage() {
               <line x1="16" y1="17" x2="8" y2="17" />
               <polyline points="10 9 9 9 8 9" />
             </svg>
-            <p style={{ fontWeight: 600, color: "#33445f", marginBottom: 4 }}>Drop CSV or Excel file here, or click to browse</p>
-            <p style={{ fontSize: 13, color: "#708097" }}>Supports CSV and Excel formats</p>
-            <input ref={fileInputRef} type="file" accept=".csv,.xlsx" style={{ display: "none" }} onChange={handleFileInput} />
+            <p style={{ fontWeight: 600, color: "#33445f", marginBottom: 4 }}>Drop CSV file here, or click to browse</p>
+            <p style={{ fontSize: 13, color: "#708097" }}>CSV format required</p>
+            <input ref={fileInputRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleFileInput} />
           </div>
 
           <button
