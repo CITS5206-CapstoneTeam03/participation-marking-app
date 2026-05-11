@@ -9,7 +9,6 @@ export default function ConfigPage() {
     configWeeks: weeks,
     setConfigWeeks: setWeeks,
     maxWeeklyScore,
-    setMaxWeeklyScore,
     totalAssessmentWeighting,
     setTotalAssessmentWeighting,
   } = useAppContext();
@@ -151,22 +150,17 @@ export default function ConfigPage() {
               </div>
 
               <div className="config-field">
-                <label htmlFor="max-weekly-score" className="config-field-label">
-                  Max Weekly Score
-                </label>
-                <input
-                  id="max-weekly-score"
-                  type="number"
-                  min={1}
-                  max={3}
-                  value={maxWeeklyScore}
-                  onChange={(e) => {
-                    setSaved(false);
-                    const v = Number(e.target.value);
-                    if (!Number.isNaN(v) && v >= 1 && v <= 3) setMaxWeeklyScore(v);
-                  }}
-                  className="config-field-input"
-                />
+                <label className="config-field-label">Max Weekly Score</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <input
+                    type="number"
+                    value={3}
+                    readOnly
+                    className="config-field-input"
+                    style={{ opacity: 0.6, cursor: "not-allowed", width: 80 }}
+                  />
+                  <span style={{ fontSize: 12, color: "var(--ink-soft)" }}>Fixed per MVP scope</span>
+                </div>
               </div>
 
               <div className="config-field">
