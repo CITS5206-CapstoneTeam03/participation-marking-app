@@ -303,7 +303,7 @@ export function WorkshopsView() {
                       className="workshop-file-input"
                       onChange={(e) => onUploadCsv(workshop.id, e)}
                     />
-                    <Link href={`/workshops/${workshop.id}`} className="workshop-view-btn">
+                    <Link href={`/workshops/detail?id=${workshop.id}`} className="workshop-view-btn">
                       View Details
                     </Link>
                   </div>

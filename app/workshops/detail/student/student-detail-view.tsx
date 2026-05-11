@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, notFound } from "next/navigation";
-import { CoordinatorShell } from "../../../../components/coordinator-shell";
-import { useAppContext, type Score } from "../../../../context/app-context";
+import { useSearchParams } from "next/navigation";
+import { CoordinatorShell } from "../../../components/coordinator-shell";
+import { useAppContext, type Score } from "../../../context/app-context";
 
 function getStatus(gradePct: number): { label: string; sub: string; color: string } {
   if (gradePct >= 80) return { label: "Excellent", sub: "Keep it up", color: "#16a34a" };
@@ -30,38 +30,78 @@ function InitialsAvatar({ name }: { name: string }) {
   );
 }
 
+function InfoChip({ icon, label, value }: { icon: "id" | "email" | "workshop"; label: string; value: string }) {
+  const iconEl = icon === "id"
+    ? <span style={{ fontWeight: 800, fontSize: 13 }}>#</span>
+    : icon === "email"
+      ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+      : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
+
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: 8,
+      background: "#f4f6fb", borderRadius: 10, padding: "8px 14px",
+    }}>
+      <span style={{ color: "var(--nav-accent)", display: "flex", alignItems: "center" }}>{iconEl}</span>
+      <div>
+        <p style={{ fontSize: 11, color: "var(--ink-soft)", margin: 0, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>{label}</p>
+        <p style={{ fontSize: 14, color: "var(--navy)", margin: 0, fontWeight: 600 }}>{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function badgeStyle(bg: string, color: string): React.CSSProperties {
+  return {
+    display: "inline-block", padding: "3px 10px", borderRadius: 99,
+    background: bg, color, fontSize: 12, fontWeight: 600,
+  };
+}
+
 export function StudentDetailView() {
-  const params = useParams<{ workshopId: string; studentId: string }>();
+  const searchParams = useSearchParams();
+  const workshopId = searchParams.get("workshopId") ?? "";
+  const studentId = searchParams.get("studentId") ?? "";
+
   const { workshops, workshopStudents, sessionMarks, configWeeks, maxWeeklyScore } = useAppContext();
 
-  const workshop = workshops.find((w) => w.id === params.workshopId);
+  const workshop = workshops.find((w) => w.id === workshopId);
   const students = workshop ? (workshopStudents[workshop.id] ?? []) : [];
-  const student = students.find((s) => s.studentId === params.studentId);
+  const student = students.find((s) => s.studentId === studentId);
 
-  if (!workshop || !student) notFound();
+  if (!workshop || !student) {
+    return (
+      <CoordinatorShell>
+        <header className="prototype-header">
+          <Link href="/workshops" className="marking-breadcrumb">← Back to Workshops</Link>
+          <h1>Student not found</h1>
+        </header>
+      </CoordinatorShell>
+    );
+  }
 
   const displayName = `${student.preferredName || student.firstName} ${student.lastName}`;
   const enabledWeeks = configWeeks.filter((w) => w.enabled);
-  const enabledWeekIds = enabledWeeks.map((w) => w.id);
 
-  const weekScores = enabledWeeks.map((week) => {
-    const score = sessionMarks[week.id]?.[student.studentId];
-    return { week, score };
-  });
+  const weekScores = enabledWeeks.map((week) => ({
+    week,
+    score: sessionMarks[week.id]?.[student.studentId],
+  }));
 
-  const markedEntries = weekScores.filter((e) => e.score !== undefined);
-  const totalScore = markedEntries.reduce<number>((sum, e) => sum + (e.score as Score), 0);
-  const maxPossible = enabledWeekIds.length * maxWeeklyScore;
-  const avgPerWeek = enabledWeekIds.length > 0
-    ? (totalScore / enabledWeekIds.length).toFixed(1)
-    : "0.0";
+  const markedScores = weekScores
+    .filter((e) => e.score !== undefined)
+    .map((e) => e.score as Score);
+
+  const totalScore = markedScores.reduce<number>((sum, s) => sum + s, 0);
+  const maxPossible = enabledWeeks.length * maxWeeklyScore;
+  const avgPerWeek = enabledWeeks.length > 0 ? (totalScore / enabledWeeks.length).toFixed(1) : "0.0";
   const gradePct = maxPossible > 0 ? (totalScore / maxPossible) * 100 : 0;
   const status = getStatus(gradePct);
 
   return (
     <CoordinatorShell>
       <header className="prototype-header">
-        <Link href={`/workshops/${workshop.id}`} className="marking-breadcrumb">
+        <Link href={`/workshops/detail?id=${workshop.id}`} className="marking-breadcrumb">
           ← Back to {workshop.name}
         </Link>
       </header>
@@ -184,38 +224,5 @@ export function StudentDetailView() {
         </article>
       </section>
     </CoordinatorShell>
-  );
-}
-
-function badgeStyle(bg: string, color: string): React.CSSProperties {
-  return {
-    display: "inline-block",
-    padding: "3px 10px",
-    borderRadius: 99,
-    background: bg,
-    color,
-    fontSize: 12,
-    fontWeight: 600,
-  };
-}
-
-function InfoChip({ icon, label, value }: { icon: string; label: string; value: string }) {
-  const iconEl = icon === "id"
-    ? <span style={{ fontWeight: 800, fontSize: 13 }}>#</span>
-    : icon === "email"
-      ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-      : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
-
-  return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: 8,
-      background: "#f4f6fb", borderRadius: 10, padding: "8px 14px",
-    }}>
-      <span style={{ color: "var(--nav-accent)", display: "flex", alignItems: "center" }}>{iconEl}</span>
-      <div>
-        <p style={{ fontSize: 11, color: "var(--ink-soft)", margin: 0, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>{label}</p>
-        <p style={{ fontSize: 14, color: "var(--navy)", margin: 0, fontWeight: 600 }}>{value}</p>
-      </div>
-    </div>
   );
 }

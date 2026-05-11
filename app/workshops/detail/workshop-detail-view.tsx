@@ -1,15 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { CoordinatorShell } from "../../components/coordinator-shell";
 import { useAppContext, type Score } from "../../context/app-context";
 
 export function WorkshopDetailView() {
-  const params = useParams<{ workshopId: string }>();
+  const searchParams = useSearchParams();
+  const workshopId = searchParams.get("id") ?? "";
+
   const { workshops, workshopStudents, sessionMarks, configWeeks, maxWeeklyScore } = useAppContext();
 
-  const workshop = workshops.find((item) => item.id === params.workshopId);
+  const workshop = workshops.find((w) => w.id === workshopId);
 
   if (!workshop) {
     return (
@@ -25,7 +27,6 @@ export function WorkshopDetailView() {
   const enabledWeekIds = configWeeks.filter((w) => w.enabled).map((w) => w.id);
   const students = workshopStudents[workshop.id] ?? [];
 
-  // Summary stats
   const totalStudents = students.length;
   const weeksCompleted = enabledWeekIds.filter((weekId) =>
     students.length > 0 && students.every((s) => sessionMarks[weekId]?.[s.studentId] !== undefined),
@@ -40,9 +41,7 @@ export function WorkshopDetailView() {
   const maxPossible = totalStudents * totalEnabledWeeks * maxWeeklyScore;
   const totalScore = allScores.reduce<number>((sum, s) => sum + s, 0);
   const overallProgress = maxPossible > 0 ? Math.round((totalScore / maxPossible) * 100) : 0;
-  const avgScore = allScores.length > 0
-    ? (totalScore / allScores.length).toFixed(2)
-    : "0.00";
+  const avgScore = allScores.length > 0 ? (totalScore / allScores.length).toFixed(2) : "0.00";
 
   return (
     <CoordinatorShell>
@@ -60,7 +59,6 @@ export function WorkshopDetailView() {
         </div>
       </header>
 
-      {/* Summary stat cards */}
       <section className="real-page-panel">
         <div className="dashboard-metric-grid">
           <div className="prototype-card dashboard-metric-card">
@@ -82,7 +80,6 @@ export function WorkshopDetailView() {
         </div>
       </section>
 
-      {/* Students table */}
       <section className="real-page-panel">
         <article className="prototype-card dashboard-list-card">
           <h2 className="section-card-title">Students</h2>
@@ -109,9 +106,7 @@ export function WorkshopDetailView() {
 
                     const weeksMarked = studentScores.length;
                     const studentTotal = studentScores.reduce<number>((sum, s) => sum + s, 0);
-                    const studentAvg = weeksMarked > 0
-                      ? (studentTotal / weeksMarked).toFixed(2)
-                      : "0.00";
+                    const studentAvg = weeksMarked > 0 ? (studentTotal / weeksMarked).toFixed(2) : "0.00";
 
                     return (
                       <tr key={student.studentId}>
@@ -122,7 +117,7 @@ export function WorkshopDetailView() {
                         <td>{studentAvg}</td>
                         <td>
                           <Link
-                            href={`/workshops/${workshop.id}/students/${student.studentId}`}
+                            href={`/workshops/detail/student?workshopId=${workshop.id}&studentId=${student.studentId}`}
                             style={{ color: "var(--nav-accent)", fontWeight: 600, fontSize: 14, textDecoration: "none" }}
                           >
                             View Details
