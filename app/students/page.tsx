@@ -1,21 +1,248 @@
 "use client";
 
+import { useMemo, useState, useRef } from "react";
 import { CoordinatorShell } from "../components/coordinator-shell";
+import { useAppContext } from "../context/app-context";
 
 export default function StudentsPage() {
+  const { workshops, workshopStudents, upsertWorkshopStudentsFromCsv } = useAppContext();
+  const [search, setSearch] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const allStudents = useMemo(() => {
+    return workshops.flatMap((workshop) =>
+      (workshopStudents[workshop.id] ?? []).map((student) => ({
+        ...student,
+        workshopName: workshop.name,
+        workshopId: workshop.id,
+      })),
+    );
+  }, [workshops, workshopStudents]);
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    if (!q) return allStudents;
+    return allStudents.filter(
+      (s) =>
+        s.studentId.toLowerCase().includes(q) ||
+        `${s.firstName} ${s.lastName}`.toLowerCase().includes(q) ||
+        s.email.toLowerCase().includes(q),
+    );
+  }, [allStudents, search]);
+
+  const totalStudents = allStudents.length;
+
+  function parseCSV(text: string) {
+    const lines = text.trim().split("\n");
+    if (lines.length < 2) return null;
+    const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
+    const idIdx = headers.findIndex((h) => h.includes("student") && h.includes("id"));
+    const firstIdx = headers.findIndex((h) => h.includes("first"));
+    const lastIdx = headers.findIndex((h) => h.includes("last"));
+    const emailIdx = headers.findIndex((h) => h.includes("email"));
+    if (idIdx === -1 || emailIdx === -1) return null;
+
+    return lines.slice(1).map((line) => {
+      const cols = line.split(",").map((c) => c.trim());
+      return {
+        studentId: cols[idIdx] ?? "",
+        firstName: firstIdx !== -1 ? (cols[firstIdx] ?? "") : "",
+        lastName: lastIdx !== -1 ? (cols[lastIdx] ?? "") : "",
+        email: cols[emailIdx] ?? "",
+      };
+    }).filter((s) => s.studentId && s.email);
+  }
+
+  async function handleFile(file: File, workshopId: string) {
+    const text = await file.text();
+    const students = parseCSV(text);
+    if (students) upsertWorkshopStudentsFromCsv(workshopId, students);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file && workshops[0]) handleFile(file, workshops[0].id);
+  }
+
+  function handleFileInput(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file && workshops[0]) handleFile(file, workshops[0].id);
+  }
+
+  function downloadTemplate() {
+    const csv = "StudentID,FirstName,LastName,Email\n22001234,Emma,Wilson,emma.wilson@student.uwa.edu.au";
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "student-roster-template.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <CoordinatorShell>
-      <div className="prototype-header mb-6">
-        <h1>Students</h1>
-        <p>View and manage enrolled students across all workshops.</p>
-      </div>
+      <header className="prototype-header">
+        <h1>Student Management</h1>
+        <p>Import and manage student rosters</p>
+      </header>
 
-      <div className="panel p-7">
-        <p className="text-lg font-bold tracking-tight text-[var(--navy)]">Student Roster</p>
-        <p className="mt-2 text-sm text-[var(--ink-soft)]">
-          Student roster management is coming in a future release.
-        </p>
-      </div>
+      {/* Top two-column section */}
+      <section className="real-page-panel" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+
+        {/* Import card */}
+        <article className="prototype-card" style={{ padding: "28px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+            <span style={{ width: 36, height: 36, borderRadius: 10, background: "#eef2ff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3f5efb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+            </span>
+            <h2 className="section-card-title" style={{ margin: 0 }}>Import Students</h2>
+          </div>
+
+          {/* Drop zone */}
+          <div
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            style={{
+              border: `2px dashed ${isDragging ? "#3f5efb" : "#c8d3e8"}`,
+              borderRadius: 12,
+              padding: "36px 20px",
+              textAlign: "center",
+              cursor: "pointer",
+              background: isDragging ? "#f0f3ff" : "#fafbff",
+              marginBottom: 12,
+              transition: "all 0.15s",
+            }}
+          >
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#9aaac4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: "0 auto 12px" }}>
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+              <polyline points="10 9 9 9 8 9" />
+            </svg>
+            <p style={{ fontWeight: 600, color: "#33445f", marginBottom: 4 }}>Drop CSV or Excel file here, or click to browse</p>
+            <p style={{ fontSize: 13, color: "#708097" }}>Supports CSV and Excel formats</p>
+            <input ref={fileInputRef} type="file" accept=".csv,.xlsx" style={{ display: "none" }} onChange={handleFileInput} />
+          </div>
+
+          <button
+            type="button"
+            onClick={downloadTemplate}
+            style={{
+              width: "100%",
+              padding: "11px",
+              borderRadius: 10,
+              border: "1px solid #dbe3f1",
+              background: "#f4f6fb",
+              color: "#33445f",
+              fontWeight: 600,
+              fontSize: 14,
+              cursor: "pointer",
+            }}
+          >
+            Download CSV Template
+          </button>
+        </article>
+
+        {/* Workshop summary card */}
+        <article className="prototype-card" style={{ padding: "28px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+            <span style={{ width: 36, height: 36, borderRadius: 10, background: "#e8f8f0", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            </span>
+            <h2 className="section-card-title" style={{ margin: 0 }}>Workshop Summary</h2>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {workshops.length === 0 ? (
+              <p style={{ color: "var(--ink-soft)", fontSize: 14 }}>No workshops created yet.</p>
+            ) : (
+              workshops.map((workshop) => {
+                const count = workshopStudents[workshop.id]?.length ?? 0;
+                return (
+                  <div key={workshop.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid var(--panel-border)" }}>
+                    <span style={{ fontSize: 15, color: "#33445f" }}>{workshop.name}</span>
+                    <span style={{ fontSize: 22, fontWeight: 700, color: "#172033" }}>{count}</span>
+                  </div>
+                );
+              })
+            )}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 16 }}>
+              <span style={{ fontSize: 15, fontWeight: 600, color: "#33445f" }}>Total Students</span>
+              <span style={{ fontSize: 32, fontWeight: 700, color: "#172033" }}>{totalStudents}</span>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      {/* Roster table */}
+      <section className="real-page-panel">
+        <article className="prototype-card" style={{ padding: "28px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+            <h2 className="section-card-title" style={{ margin: 0 }}>Current Student Roster</h2>
+            <input
+              type="search"
+              placeholder="Search by name, ID or email…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{
+                padding: "8px 14px",
+                borderRadius: 10,
+                border: "1px solid #dbe3f1",
+                fontSize: 14,
+                color: "#33445f",
+                width: 260,
+                outline: "none",
+              }}
+            />
+          </div>
+
+          {allStudents.length === 0 ? (
+            <p style={{ color: "var(--ink-soft)", padding: "24px 0", textAlign: "center" }}>
+              No students imported yet. Upload a CSV above to get started.
+            </p>
+          ) : filtered.length === 0 ? (
+            <p style={{ color: "var(--ink-soft)", padding: "24px 0", textAlign: "center" }}>
+              No students match your search.
+            </p>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid var(--panel-border)" }}>
+                  {["Student ID", "Name", "Email", "Workshop"].map((h) => (
+                    <th key={h} style={{ textAlign: "left", padding: "8px 12px", fontSize: 13, fontWeight: 700, color: "#5a6a81", letterSpacing: "0.03em" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((student, i) => (
+                  <tr key={`${student.workshopId}-${student.studentId}`} style={{ borderBottom: "1px solid var(--panel-border)", background: i % 2 === 0 ? "#fff" : "#fafbff" }}>
+                    <td style={{ padding: "14px 12px", fontSize: 14, color: "#33445f", fontWeight: 600 }}>{student.studentId}</td>
+                    <td style={{ padding: "14px 12px", fontSize: 14, color: "#172033" }}>{student.preferredName ?? student.firstName} {student.lastName}</td>
+                    <td style={{ padding: "14px 12px", fontSize: 14, color: "#708097" }}>{student.email}</td>
+                    <td style={{ padding: "14px 12px", fontSize: 14, color: "#33445f" }}>{student.workshopName}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </article>
+      </section>
     </CoordinatorShell>
   );
 }
