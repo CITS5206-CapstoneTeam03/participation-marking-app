@@ -1,12 +1,16 @@
 from fastapi import Depends, FastAPI, APIRouter, HTTPException
 from sqlalchemy.orm import Session
 from sqladmin import Admin
+from contextlib import asynccontextmanager
 
-from partimark_app.db.db import get_db, engine
+from partimark_app.db.init_db import init_db
+from partimark_app.db.db import get_db, engine, SessionLocal
 from partimark_app.models.users import User
 from partimark_app.admin.views import all_admin_views
 from partimark_app.api_version.v1.api import api_router
 from partimark_app.services.logic_app.logicApp import router as logic_router
+from partimark_app.admin.auth import authentication_backend
+from partimark_app.core.config import settings
 
 # ==========================================
 # 1. Swagger UI Metadata Best Practices
@@ -28,6 +32,12 @@ tags_metadata = [
     },
 ]
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    with SessionLocal() as db:
+        init_db(db)
+    yield
+
 app = FastAPI(
     title="PartiMark Documentation",
     description=description,
@@ -37,12 +47,14 @@ app = FastAPI(
         "email": "admin@example.com",
     },
     openapi_tags=tags_metadata,
+    lifespan=lifespan,
 )
 
 app.include_router(logic_router)
 
-# Configure the Admin interface
-admin = Admin(app, engine)
+# Configure the Admin interface to be served under /api/admin
+# This ensures Azure Static Web Apps automatically proxies traffic to it.
+admin = Admin(app, engine, base_url=settings.admin_url, authentication_backend=authentication_backend)
 
 for view in all_admin_views:
     admin.add_view(view)
