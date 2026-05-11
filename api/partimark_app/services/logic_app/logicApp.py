@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Option 1: Webhook Secret Auth (No Azure AD / Entra ID needed)
+# Webhook Secret Auth (No Azure AD / Entra ID needed)
 api_key_header = APIKeyHeader(name="X-LogicApp-Secret", auto_error=False)
 
 def verify_logic_app_secret(api_key: str = Security(api_key_header)):
@@ -30,12 +30,9 @@ class StudentFormData(BaseModel):
 
 @router.post("/webhook/forms", dependencies=[Depends(verify_logic_app_secret)])
 async def handle_forms_webhook(data: StudentFormData):
+    
+    # TODO Update database with the received data
     # Process the received data here
     print(data)
 
-    # Azure Log Stream
-    logger.info(f"Student data received: {data.model_dump()}")
-
-    # TODO Update database with the received data
-
-    return {"status": "success", "data_received": data}
+    return {"status": "success"}
