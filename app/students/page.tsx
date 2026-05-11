@@ -34,22 +34,27 @@ export default function StudentsPage() {
   const totalStudents = allStudents.length;
 
   function parseCSV(text: string) {
-    const lines = text.trim().split("\n");
+    const lines = text
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
     if (lines.length < 2) return null;
-    const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
-    const idIdx = headers.findIndex((h) => h.includes("student") && h.includes("id"));
-    const firstIdx = headers.findIndex((h) => h.includes("first"));
-    const lastIdx = headers.findIndex((h) => h.includes("last"));
-    const emailIdx = headers.findIndex((h) => h.includes("email"));
+    const header = lines[0].split(",").map((h) => h.trim().toLowerCase());
+    const idIdx = header.findIndex((h) => ["studentid", "student_id", "student id", "id"].includes(h));
+    const firstIdx = header.findIndex((h) => ["firstname", "first_name", "first name", "givenname"].includes(h));
+    const lastIdx = header.findIndex((h) => ["lastname", "last_name", "last name", "surname"].includes(h));
+    const emailIdx = header.findIndex((h) => ["email", "emailaddress", "email address"].includes(h));
+    const preferredIdx = header.findIndex((h) => ["preferredname", "preferred_name", "preferred name"].includes(h));
     if (idIdx === -1 || emailIdx === -1) return null;
 
     return lines.slice(1).map((line) => {
       const cols = line.split(",").map((c) => c.trim());
       return {
-        studentId: cols[idIdx] ?? "",
-        firstName: firstIdx !== -1 ? (cols[firstIdx] ?? "") : "",
-        lastName: lastIdx !== -1 ? (cols[lastIdx] ?? "") : "",
-        email: cols[emailIdx] ?? "",
+        studentId: idIdx >= 0 ? (cols[idIdx] ?? "") : "",
+        firstName: firstIdx >= 0 ? (cols[firstIdx] ?? "") : "",
+        lastName: lastIdx >= 0 ? (cols[lastIdx] ?? "") : "",
+        email: emailIdx >= 0 ? (cols[emailIdx] ?? "") : "",
+        preferredName: preferredIdx >= 0 ? cols[preferredIdx] : undefined,
       };
     }).filter((s) => s.studentId && s.email);
   }
@@ -73,7 +78,7 @@ export default function StudentsPage() {
   }
 
   function downloadTemplate() {
-    const csv = "StudentID,FirstName,LastName,Email\n22001234,Emma,Wilson,emma.wilson@student.uwa.edu.au";
+    const csv = "StudentID,FirstName,LastName,Email,PreferredName\n22001234,Emma,Wilson,emma.wilson@student.uwa.edu.au,Emma";
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
