@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Security, status
 from fastapi.security import APIKeyHeader
-from pydantic import BaseModel
 import logging
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
@@ -10,6 +9,7 @@ from partimark_app.crud.crud_students import create_student
 from partimark_app.db.db import get_db
 from partimark_app.crud.crud_student_workshop_memberships import create_membership
 from partimark_app.crud.crud_workshops import get_workshop_by_name
+from partimark_app.schemas.students import StudentFormData
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,14 +27,6 @@ def verify_logic_app_secret(api_key: str = Security(api_key_header)):
         logger.warning("LOGIC_APP_SECRET is not set in environment variables. Webhook is currently UNPROTECTED!")
     return api_key
 
-class StudentFormData(BaseModel):
-    student_id: str
-    first_name: str
-    last_name: str
-    email: str
-    preferred_name: str
-    image_url: str
-    workshop_name: str
 
 @router.post("/webhook/forms", dependencies=[Depends(verify_logic_app_secret)])
 async def handle_forms_webhook(data: StudentFormData, db: Session = Depends(get_db)):
