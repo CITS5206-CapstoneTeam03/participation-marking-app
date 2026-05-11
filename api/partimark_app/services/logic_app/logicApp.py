@@ -28,7 +28,7 @@ def verify_logic_app_secret(api_key: str = Security(api_key_header)):
     return api_key
 
 
-@router.post("/webhook/forms", dependencies=[Depends(verify_logic_app_secret)])
+@router.post("api/webhook/forms", dependencies=[Depends(verify_logic_app_secret)])
 async def handle_forms_webhook(data: StudentFormData, db: Session = Depends(get_db)):
 
     workshop = get_workshop_by_name(db, data.workshop_name)
