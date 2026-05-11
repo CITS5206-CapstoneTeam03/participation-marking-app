@@ -11,11 +11,15 @@ def parse_template_csv(file_content: bytes) -> pd.DataFrame:
         df = pd.read_excel(BytesIO(file_content))
     except Exception:
         try:
-            # Fallback 1: Blackboard often exports files as UTF-16LE with tab separators
-            # but names them .xls
-            df = pd.read_csv(BytesIO(file_content), encoding='utf-16', sep='\t')
+            # Fallback 1: Try explicitly with openpyxl engine for .xlsx files
+            df = pd.read_excel(BytesIO(file_content), engine='openpyxl')
         except Exception:
-            # Fallback 2: Maybe it's just a regular CSV named .xls
-            df = pd.read_csv(BytesIO(file_content))
+            try:
+                # Fallback 2: Blackboard often exports files as UTF-16LE with tab separators
+                # but names them .xls
+                df = pd.read_csv(BytesIO(file_content), encoding='utf-16', sep='\t')
+            except Exception:
+                # Fallback 3: Maybe it's just a regular CSV named .xls or .xlsx
+                df = pd.read_csv(BytesIO(file_content))
             
     return df
