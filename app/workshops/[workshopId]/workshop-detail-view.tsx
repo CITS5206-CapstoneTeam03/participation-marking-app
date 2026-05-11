@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { CoordinatorShell } from "../../components/coordinator-shell";
+import { participationWeeks } from "../../data/mock-data";
 import { useAppContext, type Score } from "../../context/app-context";
 
 export function WorkshopDetailView() {
@@ -23,7 +24,9 @@ export function WorkshopDetailView() {
   }
 
   const enabledWeekIds = new Set(configWeeks.filter((week) => week.enabled).map((week) => week.id));
-  const workshopWeekIds = [...enabledWeekIds];
+  const workshopWeekIds = participationWeeks
+    .filter((week) => enabledWeekIds.has(week.id))
+    .map((week) => week.id);
 
   const students = workshopStudents[workshop.id] ?? [];
 
