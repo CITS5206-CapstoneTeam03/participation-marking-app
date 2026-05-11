@@ -7,7 +7,7 @@ import pandas as pd
 
 def generate_lms_export(
     template_df: pd.DataFrame,
-    marks: dict[tuple[str, str, str], tuple[float, float]], 
+    marks: dict[tuple[str, str, str], tuple[int, float]], 
     inactive_students: List[Student]
 ) -> str:
     """
