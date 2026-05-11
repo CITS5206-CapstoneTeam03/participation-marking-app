@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     paseto_secret_key: str
     access_token_expire_minutes: int = 60  # 1 hour default
     
+    # Logic App Webhook Secret
+    logic_app_secret: str | None = None
+
     # You can map env variables regardless of case
     model_config = SettingsConfigDict(
         env_file=str(ROOT_DIR / ".env"),
