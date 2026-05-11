@@ -14,9 +14,13 @@ export function CoordinatorDashboard() {
     .filter((week): week is (typeof participationWeeks)[number] => Boolean(week));
 
   const isUnitConfigured = enabledWeeks.length > 0;
-  // TODO(T-API): derive the active/current week from the backend rather than assuming the last enabled week
-  const activeWeekId = enabledWeeks[enabledWeeks.length - 1]?.id;
-  const markedThisWeek = activeWeekId ? Object.keys(sessionMarks[activeWeekId] ?? {}).length : 0;
+  // Most recently marked week = highest-numbered week that has any marks recorded.
+  // Falls back to the last enabled week when nothing has been marked yet.
+  // TODO(T-API): derive the active week from the backend once integrated.
+  const activeWeek =
+    [...enabledWeeks].reverse().find((week) => Object.keys(sessionMarks[week.id] ?? {}).length > 0)
+    ?? enabledWeeks[enabledWeeks.length - 1];
+  const markedThisWeek = activeWeek ? Object.keys(sessionMarks[activeWeek.id] ?? {}).length : 0;
 
   const marksAcrossEnabled = enabledWeeks.flatMap((week) =>
     Object.entries(sessionMarks[week.id] ?? {}).map(([studentId, score]) => ({
