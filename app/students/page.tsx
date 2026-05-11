@@ -5,6 +5,8 @@ import { CoordinatorShell } from "../components/coordinator-shell";
 import { useAppContext } from "../context/app-context";
 
 export default function StudentsPage() {
+  // TODO(backend): replace workshops and workshopStudents with data fetched from
+  // GET /api/workshops and GET /api/workshops/:id/students respectively.
   const { workshops, workshopStudents, upsertWorkshopStudentsFromCsv } = useAppContext();
   const [search, setSearch] = useState("");
   const [isDragging, setIsDragging] = useState(false);
@@ -66,6 +68,8 @@ export default function StudentsPage() {
     if (!targetWorkshopId) return;
     const text = await file.text();
     const students = parseCSV(text);
+    // TODO(backend): replace context upsert with POST /api/workshops/:id/students/bulk
+    // and refresh the roster from the API response.
     if (students) upsertWorkshopStudentsFromCsv(targetWorkshopId, students);
   }
 
