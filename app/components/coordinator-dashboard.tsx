@@ -6,7 +6,7 @@ import { participationWeeks } from "../data/mock-data";
 import { useAppContext } from "../context/app-context";
 
 export function CoordinatorDashboard() {
-  const { configWeeks, sessionMarks, workshops, workshopStudents, currentUserName } = useAppContext();
+  const { configWeeks, sessionMarks, workshops, workshopStudents, currentUserName, maxWeeklyScore } = useAppContext();
 
   const enabledWeeks = configWeeks
     .filter((week) => week.enabled)
@@ -33,16 +33,14 @@ export function CoordinatorDashboard() {
       ).toFixed(2)
     : "0.00";
 
-  const studentAverages = new Map<string, { name: string; total: number; count: number }>();
+  const maxPossible = enabledWeeks.length * maxWeeklyScore;
+  const studentTotals = new Map<string, number>();
   marksAcrossEnabled.forEach((mark) => {
-    const current = studentAverages.get(mark.id) ?? { name: mark.name, total: 0, count: 0 };
-    current.total += mark.score;
-    current.count += 1;
-    studentAverages.set(mark.id, current);
+    studentTotals.set(mark.id, (studentTotals.get(mark.id) ?? 0) + mark.score);
   });
-  const atRiskCount = [...studentAverages.values()].filter(
-    (student) => student.count > 0 && student.total / student.count < 1.5,
-  ).length;
+  const atRiskCount = maxPossible > 0
+    ? [...studentTotals.values()].filter((total) => total / maxPossible < 0.5).length
+    : 0;
 
   const totalStudents = workshops.reduce(
     (sum, workshop) => sum + (workshopStudents[workshop.id]?.length ?? 0),

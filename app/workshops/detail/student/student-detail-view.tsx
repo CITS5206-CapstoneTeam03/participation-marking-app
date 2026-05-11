@@ -125,25 +125,25 @@ export function StudentDetailView() {
       <section className="real-page-panel">
         <div className="dashboard-metric-grid">
           <div className="prototype-card dashboard-metric-card">
-            <p className="dashboard-metric-label" style={{ color: "#6366f1" }}>Total Score</p>
-            <p style={{ fontSize: 36, fontWeight: 800, color: "#6366f1", margin: "10px 0 4px" }}>{totalScore}</p>
+            <p className="dashboard-metric-label">Total Score</p>
+            <p style={{ fontSize: 36, fontWeight: 800, color: "#3f5efb", margin: "10px 0 4px" }}>{totalScore}</p>
             <p className="dashboard-metric-helper">out of {maxPossible} points</p>
           </div>
           <div className="prototype-card dashboard-metric-card">
-            <p className="dashboard-metric-label" style={{ color: "#16a34a" }}>Average</p>
-            <p style={{ fontSize: 36, fontWeight: 800, color: "#16a34a", margin: "10px 0 4px" }}>{avgPerWeek}</p>
+            <p className="dashboard-metric-label">Average</p>
+            <p style={{ fontSize: 36, fontWeight: 800, color: "#059669", margin: "10px 0 4px" }}>{avgPerWeek}</p>
             <p className="dashboard-metric-helper">per week</p>
           </div>
           <div className="prototype-card dashboard-metric-card">
-            <p className="dashboard-metric-label" style={{ color: "var(--nav-accent)" }}>Grade</p>
-            <p style={{ fontSize: 36, fontWeight: 800, color: "var(--nav-accent)", margin: "10px 0 4px" }}>
+            <p className="dashboard-metric-label">Grade</p>
+            <p style={{ fontSize: 36, fontWeight: 800, color: "var(--navy)", margin: "10px 0 4px" }}>
               {gradePct.toFixed(1)}%
             </p>
             <p className="dashboard-metric-helper">overall completion</p>
           </div>
           <div className="prototype-card dashboard-metric-card">
-            <p className="dashboard-metric-label" style={{ color: status.color }}>Status</p>
-            <p style={{ fontSize: 24, fontWeight: 800, color: status.color, margin: "10px 0 4px" }}>{status.label}</p>
+            <p className="dashboard-metric-label">Status</p>
+            <p style={{ fontSize: 36, fontWeight: 800, color: status.color, margin: "10px 0 4px" }}>{status.label}</p>
             <p className="dashboard-metric-helper">{status.sub}</p>
           </div>
         </div>
