@@ -80,7 +80,7 @@ export function StudentDetailView() {
     );
   }
 
-  const displayName = `${student.preferredName || student.firstName} ${student.lastName}`;
+  const displayName = `${student.preferredName ?? student.firstName} ${student.lastName}`;
   const enabledWeeks = configWeeks.filter((w) => w.enabled);
 
   const weekScores = enabledWeeks.map((week) => ({
@@ -94,7 +94,7 @@ export function StudentDetailView() {
 
   const totalScore = markedScores.reduce<number>((sum, s) => sum + s, 0);
   const maxPossible = enabledWeeks.length * maxWeeklyScore;
-  const avgPerWeek = enabledWeeks.length > 0 ? (totalScore / enabledWeeks.length).toFixed(1) : "0.0";
+  const avgPerWeek = markedScores.length > 0 ? (totalScore / markedScores.length).toFixed(1) : "0.0";
   const gradePct = maxPossible > 0 ? (totalScore / maxPossible) * 100 : 0;
   const status = getStatus(gradePct);
 

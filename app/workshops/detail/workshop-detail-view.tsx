@@ -111,7 +111,7 @@ export function WorkshopDetailView() {
                     return (
                       <tr key={student.studentId}>
                         <td>{student.studentId}</td>
-                        <td>{student.preferredName || student.firstName} {student.lastName}</td>
+                        <td>{student.preferredName ?? student.firstName} {student.lastName}</td>
                         <td>{weeksMarked} / {totalEnabledWeeks}</td>
                         <td style={{ fontWeight: 700 }}>{studentTotal}</td>
                         <td>{studentAvg}</td>
