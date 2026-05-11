@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type ChangeEvent } from "react";
 import Link from "next/link";
+import { read, utils } from "xlsx";
 import { useAppContext, type WorkshopStudent } from "../context/app-context";
 
 function parseStudentsCsv(text: string): WorkshopStudent[] {
@@ -135,20 +136,26 @@ export function WorkshopsView() {
     setEditingTutorEmail("");
   };
 
-  const onUploadCsv = (workshopId: string, event: ChangeEvent<HTMLInputElement>) => {
+  const onUploadCsv = async (workshopId: string, event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const text = typeof reader.result === "string" ? reader.result : "";
-      const students = parseStudentsCsv(text);
-      // Store only parsed CSV students; no synthetic entries are added.
-      // We intentionally replace to keep source-of-truth aligned with latest upload.
-      upsertWorkshopStudentsFromCsv(workshopId, students);
-    };
-    reader.readAsText(file);
     event.target.value = "";
+
+    const isSpreadsheet = /\.(xlsx|xls)$/i.test(file.name);
+    let students: WorkshopStudent[];
+
+    if (isSpreadsheet) {
+      const buffer = await file.arrayBuffer();
+      const wb = read(buffer);
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      if (!sheet) return;
+      students = parseStudentsCsv(utils.sheet_to_csv(sheet));
+    } else {
+      students = parseStudentsCsv(await file.text());
+    }
+
+    // We intentionally replace to keep source-of-truth aligned with latest upload.
+    upsertWorkshopStudentsFromCsv(workshopId, students);
   };
 
   const onConfirmDeleteWorkshop = () => {
@@ -299,7 +306,7 @@ export function WorkshopsView() {
                     <input
                       id={`upload-${workshop.id}`}
                       type="file"
-                      accept=".csv"
+                      accept=".csv,.xlsx,.xls"
                       className="workshop-file-input"
                       onChange={(e) => onUploadCsv(workshop.id, e)}
                     />

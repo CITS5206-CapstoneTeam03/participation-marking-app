@@ -6,10 +6,8 @@ import { CoordinatorShell } from "../../../components/coordinator-shell";
 import { useAppContext, type Score } from "../../../context/app-context";
 
 function getStatus(gradePct: number): { label: string; sub: string; color: string } {
-  if (gradePct >= 80) return { label: "Excellent", sub: "Keep it up", color: "#16a34a" };
-  if (gradePct >= 60) return { label: "Good", sub: "On track", color: "#2563eb" };
-  if (gradePct >= 40) return { label: "Needs Improvement", sub: "At risk of falling behind", color: "#d97706" };
-  return { label: "At Risk", sub: "Needs improvement", color: "#ea580c" };
+  if (gradePct >= 50) return { label: "On Track", sub: "Passing threshold met", color: "#16a34a" };
+  return { label: "At Risk", sub: "Below 50% — needs improvement", color: "#ea580c" };
 }
 
 function InitialsAvatar({ name }: { name: string }) {
