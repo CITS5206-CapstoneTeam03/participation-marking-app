@@ -150,17 +150,14 @@ export default function ConfigPage() {
               </div>
 
               <div className="config-field">
-                <label className="config-field-label">Max Weekly Score</label>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <input
-                    type="number"
-                    value={3}
-                    readOnly
-                    className="config-field-input"
-                    style={{ opacity: 0.6, cursor: "not-allowed", width: 80 }}
-                  />
-                  <span style={{ fontSize: 12, color: "var(--ink-soft)" }}>Fixed per MVP scope</span>
-                </div>
+                <label htmlFor="max-weekly-score" className="config-field-label">Max Weekly Score</label>
+                <input
+                  id="max-weekly-score"
+                  type="number"
+                  value={3}
+                  readOnly
+                  className="config-field-input"
+                />
               </div>
 
               <div className="config-field">
