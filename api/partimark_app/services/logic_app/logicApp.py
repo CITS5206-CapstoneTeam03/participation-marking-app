@@ -1,8 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, Security
+from fastapi import APIRouter, Depends, HTTPException, Security, status
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel
 import logging
+from sqlalchemy.orm import Session
+from datetime import datetime, timezone
+
 from partimark_app.core.config import settings
+from partimark_app.crud.crud_students import create_student
+from partimark_app.db.db import get_db
+from partimark_app.crud.crud_student_workshop_memberships import create_membership
+from partimark_app.crud.crud_workshops import get_workshop_by_name
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,12 +34,38 @@ class StudentFormData(BaseModel):
     email: str
     preferred_name: str
     image_url: str
+    workshop_name: str
 
 @router.post("/webhook/forms", dependencies=[Depends(verify_logic_app_secret)])
-async def handle_forms_webhook(data: StudentFormData):
-    
-    # TODO Update database with the received data
-    # Process the received data here
-    print(data)
+async def handle_forms_webhook(data: StudentFormData, db: Session = Depends(get_db)):
+
+    workshop = get_workshop_by_name(db, data.workshop_name)
+    if not workshop:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Workshop '{data.workshop_name}' not found in the database.",
+        )
+
+    create_student(
+        db, 
+        student_data={
+            "student_id": data.student_id,
+            "first_name": data.first_name,
+            "last_name": data.last_name,
+            "email": data.email,
+            "preferred_name": data.preferred_name,
+            "image_url": data.image_url
+        }
+    )
+
+    create_membership(
+        db,
+        membership_data={
+            "student_id": data.student_id,
+            "workshop_id": workshop.workshop_id,
+            "is_current": True,
+            "start_date": datetime.now(timezone.utc)
+        }
+    )
 
     return {"status": "success"}
