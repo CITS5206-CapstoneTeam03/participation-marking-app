@@ -31,6 +31,15 @@ class Settings(BaseSettings):
     initial_admin_password: str | None = None
     admin_url: str | None = None
     
+    # Admin Bootstrapping (Optional)
+    # Used by the startup routine to provision an initial admin account if it doesn't exist
+    initial_admin_email: str | None = None
+    initial_admin_password: str | None = None
+    admin_url: str | None = None
+    
+    # Logic App Webhook Secret
+    logic_app_secret: str | None = None
+
     # You can map env variables regardless of case
     model_config = SettingsConfigDict(
         env_file=str(ROOT_DIR / ".env"),
