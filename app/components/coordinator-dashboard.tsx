@@ -1,44 +1,74 @@
 "use client";
 
 import Link from "next/link";
-// TODO(T-API): replace participationWeeks with GET /weeks API response once backend is integrated
-import { participationWeeks } from "../data/mock-data";
+import { useEffect, useMemo, useState } from "react";
 import { useAppContext } from "../context/app-context";
+import { getMarksByWorkshopAndWeek, type MarkDto } from "../lib/services/marks";
 
 export function CoordinatorDashboard() {
-  const { configWeeks, sessionMarks, workshops, workshopStudents, currentUserName } = useAppContext();
+  const { configWeeks, workshops, workshopStudents, currentUserName } = useAppContext();
+  const [marksByWorkshopWeek, setMarksByWorkshopWeek] = useState<Record<string, Record<number, MarkDto[]>>>({});
 
-  const enabledWeeks = configWeeks
-    .filter((week) => week.enabled)
-    .map((week) => participationWeeks.find((p) => p.id === week.id))
-    .filter((week): week is (typeof participationWeeks)[number] => Boolean(week));
-
-  const isUnitConfigured = enabledWeeks.length > 0;
-  // TODO(T-API): derive the active/current week from the backend rather than assuming the last enabled week
-  const activeWeekId = enabledWeeks[enabledWeeks.length - 1]?.id;
-  const markedThisWeek = activeWeekId ? Object.keys(sessionMarks[activeWeekId] ?? {}).length : 0;
-
-  const marksAcrossEnabled = enabledWeeks.flatMap((week) =>
-    Object.entries(sessionMarks[week.id] ?? {}).map(([studentId, score]) => ({
-      id: studentId,
-      name: studentId,
-      score,
-    })),
+  const enabledWeeks = useMemo(
+    () => configWeeks.filter((week) => week.enabled),
+    [configWeeks],
   );
+  const isUnitConfigured = enabledWeeks.length > 0;
+  const activeWeek = enabledWeeks[enabledWeeks.length - 1] ?? null;
 
-  const avgParticipation = marksAcrossEnabled.length
-    ? (
-        marksAcrossEnabled.reduce((sum, mark) => sum + mark.score, 0) /
-        marksAcrossEnabled.length
-      ).toFixed(2)
+  useEffect(() => {
+    if (workshops.length === 0 || enabledWeeks.length === 0) {
+      return;
+    }
+
+    let isCurrent = true;
+
+    Promise.all(
+      workshops.map(async (workshop) => {
+        const weekEntries = await Promise.all(
+          enabledWeeks.map(async (week) => {
+            const marks = await getMarksByWorkshopAndWeek(workshop.id, week.weekNumber);
+            return [week.weekNumber, marks] as const;
+          }),
+        );
+        return [workshop.id, Object.fromEntries(weekEntries)] as const;
+      }),
+    )
+      .then((entries) => {
+        if (!isCurrent) return;
+        setMarksByWorkshopWeek(Object.fromEntries(entries));
+      })
+      .catch(() => {
+        if (!isCurrent) return;
+        setMarksByWorkshopWeek({});
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [workshops, enabledWeeks]);
+
+  const allMarks = workshops.flatMap((workshop) =>
+    enabledWeeks.flatMap((week) => marksByWorkshopWeek[workshop.id]?.[week.weekNumber] ?? []),
+  );
+  const avgParticipation = allMarks.length
+    ? (allMarks.reduce((sum, mark) => sum + mark.score, 0) / allMarks.length).toFixed(2)
     : "0.00";
 
-  const studentAverages = new Map<string, { name: string; total: number; count: number }>();
-  marksAcrossEnabled.forEach((mark) => {
-    const current = studentAverages.get(mark.id) ?? { name: mark.name, total: 0, count: 0 };
+  const markedThisWeek = activeWeek
+    ? workshops.reduce((sum, workshop) => {
+        const workshopStudentIds = new Set((workshopStudents[workshop.id] ?? []).map((student) => student.studentId));
+        const marks = marksByWorkshopWeek[workshop.id]?.[activeWeek.weekNumber] ?? [];
+        return sum + marks.filter((mark) => workshopStudentIds.has(mark.student_id)).length;
+      }, 0)
+    : 0;
+
+  const studentAverages = new Map<string, { total: number; count: number }>();
+  allMarks.forEach((mark) => {
+    const current = studentAverages.get(mark.student_id) ?? { total: 0, count: 0 };
     current.total += mark.score;
     current.count += 1;
-    studentAverages.set(mark.id, current);
+    studentAverages.set(mark.student_id, current);
   });
   const atRiskCount = [...studentAverages.values()].filter(
     (student) => student.count > 0 && student.total / student.count < 1.5,
@@ -54,14 +84,18 @@ export function CoordinatorDashboard() {
     .slice(0, 5)
     .map((week) => ({
       week: week.weekNumber,
-      marks: Object.keys(sessionMarks[week.id] ?? {}).length,
+      marks: workshops.reduce((sum, workshop) => {
+        const workshopStudentIds = new Set((workshopStudents[workshop.id] ?? []).map((student) => student.studentId));
+        const marks = marksByWorkshopWeek[workshop.id]?.[week.weekNumber] ?? [];
+        return sum + marks.filter((mark) => workshopStudentIds.has(mark.student_id)).length;
+      }, 0),
     }))
     .filter((item) => item.marks > 0);
 
   return (
     <>
       <header className="prototype-header">
-        <h1>Welcome back, {currentUserName || "Coordinator"}</h1>
+        <h1>Welcome back, {currentUserName}</h1>
         <p>Overview of all workshops and participation tracking</p>
       </header>
 
@@ -70,7 +104,7 @@ export function CoordinatorDashboard() {
           <article className="prototype-card dashboard-alert">
             <h2 className="dashboard-alert-title">Unit Not Configured</h2>
             <p className="dashboard-alert-body">
-            Please configure participation weeks and weighting before tutors start marking.
+              Please configure participation weeks and weighting before tutors start marking.
             </p>
             <Link href="/config" className="dashboard-alert-btn">Go to Settings</Link>
           </article>
@@ -104,14 +138,10 @@ export function CoordinatorDashboard() {
               const workshopStudentList = workshopStudents[workshop.id] ?? [];
               const workshopStudentCount = workshopStudentList.length;
               const workshopStudentIds = new Set(workshopStudentList.map((student) => student.studentId));
-              const workshopMarks = isUnitConfigured
-                ? enabledWeeks.reduce((sum, week) => {
-                    const markedCount = Object.keys(sessionMarks[week.id] ?? {}).filter((studentId) =>
-                      workshopStudentIds.has(studentId),
-                    ).length;
-                    return sum + markedCount;
-                  }, 0)
-                : 0;
+              const workshopMarks = enabledWeeks.reduce((sum, week) => {
+                const marks = marksByWorkshopWeek[workshop.id]?.[week.weekNumber] ?? [];
+                return sum + marks.filter((mark) => workshopStudentIds.has(mark.student_id)).length;
+              }, 0);
               return (
                 <div
                   key={workshop.id}
