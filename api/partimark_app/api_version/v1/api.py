@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from partimark_app.core.deps import get_current_user, get_non_admin_user 
+from ...core.deps import get_current_user, get_non_admin_user #type: ignore
 from .routes import ( #type: ignore
     users,
     workshops,

@@ -11,7 +11,7 @@ class SystemConfigBase(BaseModel):
     """Shared properties across system configuration schemas."""
     coordinator_user_id: str = Field(..., max_length=50)
     max_weekly_score: int = Field(3, ge=0)
-    total_participation_points: int = Field(0, ge=0)
+    total_participation_points: Optional[int] = Field(None, ge=0)
     is_configured: bool = False
     week6_lock_enabled: bool = False
     week6_locked_at: Optional[datetime] = None
