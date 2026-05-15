@@ -2,8 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useAppContext } from "../context/app-context";
-// TODO(T-API): replace participationWeeks with GET /weeks API response once backend is integrated
-import { participationWeeks } from "../data/mock-data";
 
 type WeekDropdownProps = {
   currentWeekId: string;
@@ -17,8 +15,7 @@ export function WeekDropdown({ currentWeekId }: WeekDropdownProps) {
   const router = useRouter();
   const { configWeeks } = useAppContext();
 
-  const enabledIds = new Set(configWeeks.filter((w) => w.enabled).map((w) => w.id));
-  const weeks = participationWeeks.filter((w) => enabledIds.has(w.id));
+  const weeks = configWeeks.filter((week) => week.enabled && !week.locked);
 
   return (
     <select
