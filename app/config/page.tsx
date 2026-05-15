@@ -13,17 +13,41 @@ export default function ConfigPage() {
     setMaxWeeklyScore,
     totalAssessmentWeighting,
     setTotalAssessmentWeighting,
+    saveSystemConfig,
+    saveEnabledWeeks,
   } = useAppContext();
 
-  const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"unit" | "students">("unit");
 
   const selectedWeeks = weeks.filter((w) => w.enabled);
   const totalPoints = selectedWeeks.length * maxWeeklyScore;
 
+  const markSaving = () => {
+    setSaveError(null);
+  };
+
+  const markSaved = () => {
+    setSaveError(null);
+  };
+
+  const markSaveFailed = () => {
+    setSaveError("Unable to save configuration.");
+  };
+
+  const persistWeeks = (nextWeeks: typeof weeks) => {
+    void saveEnabledWeeks(nextWeeks).then(markSaved).catch(markSaveFailed);
+  };
+
+  const persistSystemConfig = (options: Parameters<typeof saveSystemConfig>[0]) => {
+    void saveSystemConfig(options).then(markSaved).catch(markSaveFailed);
+  };
+
   const toggleWeek = (weekId: string) => {
-    setSaved(false);
-    setWeeks(weeks.map((w) => (w.id === weekId && !w.locked ? { ...w, enabled: !w.enabled } : w)));
+    markSaving();
+    const nextWeeks = weeks.map((w) => (w.id === weekId && !w.locked ? { ...w, enabled: !w.enabled } : w));
+    setWeeks(nextWeeks);
+    persistWeeks(nextWeeks);
   };
 
   const week6Ids = ["week-1", "week-2", "week-3", "week-4", "week-5", "week-6"];
@@ -36,23 +60,29 @@ export default function ConfigPage() {
   const week12AllLocked = week12Targets.length > 0 && week12Targets.every((w) => w.locked);
 
   const toggleWeek6Lock = () => {
-    setSaved(false);
+    markSaving();
+    let nextWeeks: typeof weeks;
     if (week6AllLocked) {
-      setWeeks(weeks.map((w) => (week6Ids.includes(w.id) ? { ...w, locked: false } : w)));
+      nextWeeks = weeks.map((w) => (week6Ids.includes(w.id) ? { ...w, locked: false } : w));
     } else {
       // Locking should never force week selection; preserve existing enabled states.
-      setWeeks(weeks.map((w) => (week6Ids.includes(w.id) ? { ...w, locked: true } : w)));
+      nextWeeks = weeks.map((w) => (week6Ids.includes(w.id) ? { ...w, locked: true } : w));
     }
+    setWeeks(nextWeeks);
+    persistSystemConfig({ weeks: nextWeeks });
   };
 
   const toggleWeek12Lock = () => {
-    setSaved(false);
+    markSaving();
+    let nextWeeks: typeof weeks;
     if (week12AllLocked) {
-      setWeeks(weeks.map((w) => (week12Ids.includes(w.id) ? { ...w, locked: false } : w)));
+      nextWeeks = weeks.map((w) => (week12Ids.includes(w.id) ? { ...w, locked: false } : w));
     } else {
       // Locking should never force week selection; preserve existing enabled states.
-      setWeeks(weeks.map((w) => (week12Ids.includes(w.id) ? { ...w, locked: true } : w)));
+      nextWeeks = weeks.map((w) => (week12Ids.includes(w.id) ? { ...w, locked: true } : w));
     }
+    setWeeks(nextWeeks);
+    persistSystemConfig({ weeks: nextWeeks });
   };
 
   return (
@@ -63,16 +93,7 @@ export default function ConfigPage() {
           <h1>Settings</h1>
           <p>Manage unit configuration and student management</p>
         </div>
-        <div className="flex flex-col items-end gap-1">
-          <button
-            type="button"
-            onClick={() => setSaved(true)}
-            className="rounded-full bg-[var(--navy)] px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-          >
-            Save configuration
-          </button>
-          <p className="text-xs text-[var(--ink-soft)]">Changes are auto-saved</p>
-        </div>
+        <p className="text-xs text-[var(--ink-soft)]">Changes are auto-saved</p>
       </div>
       <div className="config-tabs">
         <button
@@ -91,8 +112,8 @@ export default function ConfigPage() {
         </button>
       </div>
 
-      {saved && activeTab === "unit" && (
-        <div className="config-save-banner">Configuration saved successfully.</div>
+      {saveError && activeTab === "unit" && (
+        <div className="config-save-banner">{saveError}</div>
       )}
 
       {activeTab === "unit" && (
@@ -162,9 +183,12 @@ export default function ConfigPage() {
                   max={3}
                   value={maxWeeklyScore}
                   onChange={(e) => {
-                    setSaved(false);
+                    markSaving();
                     const v = Number(e.target.value);
-                    if (!Number.isNaN(v) && v >= 1 && v <= 3) setMaxWeeklyScore(v);
+                    if (!Number.isNaN(v) && v >= 1 && v <= 3) {
+                      setMaxWeeklyScore(v);
+                      persistSystemConfig({ maxWeeklyScore: v });
+                    }
                   }}
                   className="config-field-input"
                 />
@@ -181,7 +205,7 @@ export default function ConfigPage() {
                   max={100}
                   value={totalAssessmentWeighting}
                   onChange={(e) => {
-                    setSaved(false);
+                    markSaving();
                     const v = Number(e.target.value);
                     if (!Number.isNaN(v))
                       setTotalAssessmentWeighting(Math.min(100, Math.max(0, v)));

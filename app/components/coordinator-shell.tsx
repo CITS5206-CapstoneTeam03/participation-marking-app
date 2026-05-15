@@ -165,9 +165,8 @@ export function CoordinatorShell({ children }: CoordinatorShellProps) {
             </button>
           </div>
           <div className="mt-4">
-            <p className="text-[15px] font-semibold text-[#172033]">{currentUserName || "Coordinator"}</p>
-            <p className="text-sm text-[#708097]">Coordinator</p>
-            <p className="mt-1 text-sm font-medium text-[#3f5efb]">Viewing as: {viewRole}</p>
+            <p className="text-[15px] font-semibold text-[#172033]">{currentUserName}</p>
+            <p className="text-sm text-[#708097]">{authRole === "coordinator" ? "Coordinator" : "Tutor"}</p>
           </div>
           <button type="button" className="tutor-signout-btn" onClick={handleSignOut}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
