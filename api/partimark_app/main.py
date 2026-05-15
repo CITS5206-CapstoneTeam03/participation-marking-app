@@ -2,6 +2,10 @@ from fastapi import Depends, FastAPI, APIRouter, HTTPException
 from sqlalchemy.orm import Session
 from sqladmin import Admin
 from contextlib import asynccontextmanager
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 from partimark_app.db.init_db import init_db
 from partimark_app.db.db import get_db, engine, SessionLocal
@@ -52,12 +56,15 @@ app = FastAPI(
 
 app.include_router(logic_router)
 
-# Configure the Admin interface to be served under /api/admin
-# This ensures Azure Static Web Apps automatically proxies traffic to it.
-admin = Admin(app, engine, base_url=settings.admin_url, authentication_backend=authentication_backend)
+if settings.admin_url:
+    # Configure the Admin interface to be served under admin_url
+    # This ensures Azure Static Web Apps automatically proxies traffic to it.
+    admin = Admin(app, engine, base_url=settings.admin_url, authentication_backend=authentication_backend)
 
-for view in all_admin_views:
-    admin.add_view(view)
+    for view in all_admin_views:
+        admin.add_view(view)
+else:
+    logger.warning("Admin URL is not set. Admin interface will not be available.")
 
 router = APIRouter(prefix="/api")
 
