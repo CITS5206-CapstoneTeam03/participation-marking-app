@@ -4,7 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from ....db.db import get_db #type:ignore
+from ....schemas.students import StudentResponse #type:ignore
 from ....schemas.workshops import WorkshopCreate, WorkshopResponse, WorkshopUpdate #type:ignore
+from ....crud import crud_student_workshop_memberships as crud_memberships #type:ignore
 from ....crud import crud_workshops as crud_workshops #type:ignore
 from ....crud import crud_users as crud_users #type:ignore
 
@@ -39,6 +41,22 @@ def create_workshop(workshop_in: WorkshopCreate, db: Session = Depends(get_db)):
 @router.get("/", response_model=List[WorkshopResponse])
 def get_workshops(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return crud_workshops.get_workshops(db, skip=skip, limit=limit)
+
+
+@router.get("/students/{workshop_id}", response_model=List[StudentResponse])
+def get_workshop_students(workshop_id: int, db: Session = Depends(get_db)):
+    workshop = crud_workshops.get_workshop(db, workshop_id=workshop_id)
+    if not workshop:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workshop not found.",
+        )
+
+    memberships = crud_memberships.get_current_memberships_by_workshop(
+        db,
+        workshop_id=workshop_id,
+    )
+    return [membership.student for membership in memberships]
 
 
 @router.get("/{workshop_id}", response_model=WorkshopResponse)
