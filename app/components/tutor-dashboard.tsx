@@ -1,56 +1,89 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAppContext } from "../context/app-context";
+import { getMarksByWorkshopAndWeek, type MarkDto } from "../lib/services/marks";
 
 export function TutorDashboard() {
   const {
     configWeeks,
-    sessionMarks,
     maxWeeklyScore,
     workshops,
     workshopStudents,
     currentUserName,
   } = useAppContext();
+  const [marksByWorkshopWeek, setMarksByWorkshopWeek] = useState<Record<string, Record<number, MarkDto[]>>>({});
 
-  const enabledWeekIds = useMemo(
-    () => new Set(configWeeks.filter((week) => week.enabled).map((week) => week.id)),
+  const enabledWeeks = useMemo(
+    () => configWeeks.filter((week) => week.enabled),
     [configWeeks],
   );
-  const totalWeeksConfigured = enabledWeekIds.size;
+  const totalWeeksConfigured = enabledWeeks.length;
   const totalParticipationPoints = totalWeeksConfigured * maxWeeklyScore;
 
   const assignedWorkshops = useMemo(() => {
     return workshops.filter((workshop) => workshop.tutorName && workshop.tutorName === currentUserName);
   }, [workshops, currentUserName]);
 
+  useEffect(() => {
+    if (assignedWorkshops.length === 0 || enabledWeeks.length === 0) {
+      return;
+    }
+
+    let isCurrent = true;
+
+    Promise.all(
+      assignedWorkshops.map(async (workshop) => {
+        const weekEntries = await Promise.all(
+          enabledWeeks.map(async (week) => {
+            const marks = await getMarksByWorkshopAndWeek(workshop.id, week.weekNumber);
+            return [week.weekNumber, marks] as const;
+          }),
+        );
+        return [workshop.id, Object.fromEntries(weekEntries)] as const;
+      }),
+    )
+      .then((entries) => {
+        if (!isCurrent) return;
+        setMarksByWorkshopWeek(Object.fromEntries(entries));
+      })
+      .catch(() => {
+        if (!isCurrent) return;
+        setMarksByWorkshopWeek({});
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [assignedWorkshops, enabledWeeks]);
+
   const stats = useMemo(() => {
-    const enabledWeekIdList = [...enabledWeekIds];
     const perWorkshop = assignedWorkshops.map((workshop) => {
       const students = workshopStudents[workshop.id] ?? [];
       const studentCount = students.length;
       const studentIds = new Set(students.map((student) => student.studentId));
 
-      const marksRecorded = enabledWeekIdList.reduce((sum, weekId) => {
-        const weekMarks = sessionMarks[weekId] ?? {};
-        const markedStudents = Object.keys(weekMarks).filter((studentId) => studentIds.has(studentId));
+      const workshopMarksByWeek = marksByWorkshopWeek[workshop.id] ?? {};
+      const marksRecorded = enabledWeeks.reduce((sum, week) => {
+        const weekMarks = workshopMarksByWeek[week.weekNumber] ?? [];
+        const markedStudents = weekMarks.filter((mark) => studentIds.has(mark.student_id));
         return sum + markedStudents.length;
       }, 0);
 
-      const workshopCompletedWeeks = enabledWeekIdList.filter((weekId) => {
+      const workshopCompletedWeeks = enabledWeeks.filter((week) => {
         if (studentCount === 0) return false;
-        const weekMarks = sessionMarks[weekId] ?? {};
-        const markedStudents = Object.keys(weekMarks).filter((studentId) => studentIds.has(studentId));
+        const weekMarks = workshopMarksByWeek[week.weekNumber] ?? [];
+        const markedStudents = weekMarks.filter((mark) => studentIds.has(mark.student_id));
         return markedStudents.length >= studentCount;
       }).length;
 
-      const possibleMarks = studentCount * enabledWeekIdList.length;
+      const possibleMarks = studentCount * enabledWeeks.length;
 
       return {
         workshop,
         studentCount,
-        workshopWeekCount: enabledWeekIdList.length,
+        workshopWeekCount: enabledWeeks.length,
         marksRecorded,
         completedWeeks: workshopCompletedWeeks,
         possibleMarks,
@@ -71,14 +104,14 @@ export function TutorDashboard() {
       totalWorkshopWeeks,
       completionPercentage,
     };
-  }, [assignedWorkshops, workshopStudents, sessionMarks, enabledWeekIds]);
+  }, [assignedWorkshops, workshopStudents, marksByWorkshopWeek, enabledWeeks]);
 
   const workshopLabel = assignedWorkshops.length === 1 ? assignedWorkshops[0].name : `${assignedWorkshops.length} workshops`;
 
   return (
     <div className="tutor-dashboard">
       <header className="prototype-header">
-        <h1>Welcome back, {currentUserName || "Tutor"}</h1>
+        <h1>Welcome back, {currentUserName}</h1>
         <p>Managing {workshopLabel} • {stats.totalStudents} students</p>
       </header>
 

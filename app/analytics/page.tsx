@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CoordinatorShell } from "../components/coordinator-shell";
 import { TutorShell } from "../components/tutor-shell";
 import { useAppContext } from "../context/app-context";
-import type { Score } from "../context/app-context";
+import { getMarksByWorkshopAndWeek, type MarkDto } from "../lib/services/marks";
 
 type AnalyticsRow = {
   studentId: string;
@@ -47,13 +47,13 @@ function AnalyticsContent() {
     workshops,
     workshopStudents,
     configWeeks,
-    sessionMarks,
     maxWeeklyScore,
     totalAssessmentWeighting,
     currentUserName,
   } = useAppContext();
 
   const [selectedWorkshopId, setSelectedWorkshopId] = useState("all");
+  const [marksByWorkshopWeek, setMarksByWorkshopWeek] = useState<Record<string, Record<number, MarkDto[]>>>({});
 
   const enabledWeeks = useMemo(() => {
     return configWeeks.filter((week) => week.enabled);
@@ -69,6 +69,38 @@ function AnalyticsContent() {
     return workshops.filter((workshop) => workshop.tutorName === currentUserName);
   }, [viewRole, workshops, currentUserName]);
 
+  useEffect(() => {
+    if (visibleWorkshops.length === 0 || enabledWeeks.length === 0) {
+      return;
+    }
+
+    let isCurrent = true;
+
+    Promise.all(
+      visibleWorkshops.map(async (workshop) => {
+        const weekEntries = await Promise.all(
+          enabledWeeks.map(async (week) => {
+            const marks = await getMarksByWorkshopAndWeek(workshop.id, week.weekNumber);
+            return [week.weekNumber, marks] as const;
+          }),
+        );
+        return [workshop.id, Object.fromEntries(weekEntries)] as const;
+      }),
+    )
+      .then((entries) => {
+        if (!isCurrent) return;
+        setMarksByWorkshopWeek(Object.fromEntries(entries));
+      })
+      .catch(() => {
+        if (!isCurrent) return;
+        setMarksByWorkshopWeek({});
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [visibleWorkshops, enabledWeeks]);
+
   const effectiveWorkshopId =
     selectedWorkshopId === "all" ||
     visibleWorkshops.some((workshop) => workshop.id === selectedWorkshopId)
@@ -80,9 +112,12 @@ function AnalyticsContent() {
       const students = workshopStudents[workshop.id] ?? [];
 
       return students.map((student) => {
-        const recordedScores = enabledWeeks
-          .map((week) => sessionMarks[week.id]?.[student.studentId])
-          .filter((score): score is Score => score !== undefined);
+        const workshopMarksByWeek = marksByWorkshopWeek[workshop.id] ?? {};
+        const recordedScores = enabledWeeks.flatMap((week) =>
+          (workshopMarksByWeek[week.weekNumber] ?? [])
+            .filter((mark) => mark.student_id === student.studentId)
+            .map((mark) => mark.score),
+        );
 
         const totalScore = recordedScores.reduce<number>((sum, score) => sum + score, 0);
         const averageScore = recordedScores.length > 0 ? totalScore / recordedScores.length : null;
@@ -129,7 +164,7 @@ function AnalyticsContent() {
     visibleWorkshops,
     workshopStudents,
     enabledWeeks,
-    sessionMarks,
+    marksByWorkshopWeek,
     totalParticipationPoints,
     totalAssessmentWeighting,
   ]);
