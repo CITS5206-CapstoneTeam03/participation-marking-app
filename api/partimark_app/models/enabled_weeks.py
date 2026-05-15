@@ -23,6 +23,7 @@ class EnabledWeek(Base):
     participation_marks: Mapped[list["ParticipationMark"]] = relationship(
         "ParticipationMark",
         back_populates="enabled_week",
+        cascade="all, delete-orphan",
     )
 
     def __repr__(self) -> str:
