@@ -8,7 +8,7 @@ import { ApiError } from "../interface/apiTypes";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { isAuthLoading, isAuthenticated, loginWithCredentials, loginAsRole } = useAppContext();
+  const { isAuthLoading, isAuthenticated, loginWithCredentials } = useAppContext();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,7 +27,6 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      // TODO(T-304): this call should remain the primary auth path once backend auth is deployed.
       await loginWithCredentials(email.trim(), password);
       router.push("/");
     } catch (err) {
@@ -43,12 +42,6 @@ export default function LoginPage() {
     } finally {
       setIsSubmitting(false);
     }
-  }
-
-  function handleTestLogin(role: "coordinator" | "tutor") {
-    setError(null);
-    loginAsRole(role);
-    router.push("/");
   }
 
   return (
@@ -108,70 +101,6 @@ export default function LoginPage() {
           >
             {isSubmitting ? "Signing in..." : "Sign In"}
           </button>
-
-          <div
-            className="login-test-divider"
-            aria-hidden="true"
-            style={{ margin: "14px 0 10px", display: "flex", alignItems: "center", gap: "10px" }}
-          >
-            <span style={{ height: "1px", flex: 1, background: "#dbe3f1" }} />
-            <p
-              style={{
-                margin: 0,
-                color: "#708097",
-                fontSize: "12px",
-                fontWeight: 600,
-                letterSpacing: "0.04em",
-                textTransform: "uppercase",
-              }}
-            >
-              Test logins
-            </p>
-            <span style={{ height: "1px", flex: 1, background: "#dbe3f1" }} />
-          </div>
-
-          <div className="login-test-grid" style={{ display: "grid", gridTemplateColumns: "1fr", gap: "8px" }}>
-            <button
-              type="button"
-              className="login-test-btn"
-              onClick={() => handleTestLogin("coordinator")}
-              disabled={isSubmitting}
-              style={{
-                height: "40px",
-                borderRadius: "10px",
-                border: "1px solid #d8e0ee",
-                background: "#f8faff",
-                color: "#33445f",
-                fontSize: "14px",
-                fontWeight: 600,
-                cursor: isSubmitting ? "not-allowed" : "pointer",
-              }}
-            >
-              Sign in as Unit Coordinator
-            </button>
-            <button
-              type="button"
-              className="login-test-btn"
-              onClick={() => handleTestLogin("tutor")}
-              disabled={isSubmitting}
-              style={{
-                height: "40px",
-                borderRadius: "10px",
-                border: "1px solid #d8e0ee",
-                background: "#f8faff",
-                color: "#33445f",
-                fontSize: "14px",
-                fontWeight: 600,
-                cursor: isSubmitting ? "not-allowed" : "pointer",
-              }}
-            >
-              Sign in as Tutor
-            </button>
-          </div>
-
-          <p className="login-test-note" style={{ margin: "10px 0 0", color: "#708097", fontSize: "12px", lineHeight: 1.4 }}>
-            Dev-only fallback for frontend testing. TODO(T-304): remove after backend auth rollout.
-          </p>
         </form>
       </div>
     </div>
