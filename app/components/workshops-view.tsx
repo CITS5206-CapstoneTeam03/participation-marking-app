@@ -1,35 +1,8 @@
 "use client";
 
-import { useMemo, useState, type ChangeEvent } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useAppContext, type WorkshopStudent } from "../context/app-context";
-
-function parseStudentsCsv(text: string): WorkshopStudent[] {
-  const lines = text
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  if (lines.length === 0) return [];
-
-  const header = lines[0].split(",").map((value) => value.trim().toLowerCase());
-  const studentIdIdx = header.findIndex((h) => ["studentid", "student_id", "student id", "id"].includes(h));
-  const firstNameIdx = header.findIndex((h) => ["firstname", "first_name", "first name", "givenname"].includes(h));
-  const lastNameIdx = header.findIndex((h) => ["lastname", "last_name", "last name", "surname"].includes(h));
-  const emailIdx = header.findIndex((h) => ["email", "emailaddress", "email address"].includes(h));
-  const preferredNameIdx = header.findIndex((h) => ["preferredname", "preferred_name", "preferred name"].includes(h));
-
-  return lines.slice(1).map((line) => {
-    const cols = line.split(",").map((value) => value.trim());
-    return {
-      studentId: studentIdIdx >= 0 ? (cols[studentIdIdx] ?? "") : "",
-      firstName: firstNameIdx >= 0 ? (cols[firstNameIdx] ?? "") : "",
-      lastName: lastNameIdx >= 0 ? (cols[lastNameIdx] ?? "") : "",
-      email: emailIdx >= 0 ? (cols[emailIdx] ?? "") : "",
-      preferredName: preferredNameIdx >= 0 ? cols[preferredNameIdx] : undefined,
-    } satisfies WorkshopStudent;
-  }).filter((student) => student.studentId && student.email);
-}
+import { useAppContext } from "../context/app-context";
 
 export function WorkshopsView() {
   const {
@@ -39,20 +12,18 @@ export function WorkshopsView() {
     deleteWorkshop,
     updateWorkshopTutor,
     assignCurrentUserAsTutor,
-    upsertWorkshopStudentsFromCsv,
     currentUserName,
     sessionMarks,
     configWeeks,
   } = useAppContext();
 
   const [newWorkshopName, setNewWorkshopName] = useState("");
-  const [newWorkshopTutorName, setNewWorkshopTutorName] = useState("");
   const [newWorkshopTutorEmail, setNewWorkshopTutorEmail] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingWorkshopId, setEditingWorkshopId] = useState<string | null>(null);
-  const [editingTutorName, setEditingTutorName] = useState("");
   const [editingTutorEmail, setEditingTutorEmail] = useState("");
   const [confirmDeleteWorkshopId, setConfirmDeleteWorkshopId] = useState<string | null>(null);
+  const [workshopError, setWorkshopError] = useState<string | null>(null);
 
   const enabledWeekIds = useMemo(
     () => new Set(configWeeks.filter((week) => week.enabled).map((week) => week.id)),
@@ -99,62 +70,49 @@ export function WorkshopsView() {
     });
   }, [workshops, workshopStudents, sessionMarks, enabledWeekIds]);
 
-  const onCreateWorkshop = () => {
+  const onCreateWorkshop = async () => {
     if (!newWorkshopName.trim()) return;
-    createWorkshop(newWorkshopName, newWorkshopTutorName, newWorkshopTutorEmail);
-
-    // TODO: trigger backend email invitation flow when creating a workshop with tutor email.
-    // sendTutorInvitationEmail({ workshopName: newWorkshopName, tutorName: newWorkshopTutorName, tutorEmail: newWorkshopTutorEmail });
-
-    setNewWorkshopName("");
-    setNewWorkshopTutorName("");
-    setNewWorkshopTutorEmail("");
-    setShowCreateModal(false);
+    setWorkshopError(null);
+    try {
+      await createWorkshop(newWorkshopName, null, newWorkshopTutorEmail);
+      setNewWorkshopName("");
+      setNewWorkshopTutorEmail("");
+      setShowCreateModal(false);
+    } catch {
+      setWorkshopError("Unable to create workshop. Check the workshop name and tutor email.");
+    }
   };
 
-  const onStartEditTutor = (workshopId: string, tutorName: string | null, tutorEmail: string | null) => {
+  const onStartEditTutor = (workshopId: string, tutorEmail: string | null) => {
     setEditingWorkshopId(workshopId);
-    setEditingTutorName(tutorName ?? "");
     setEditingTutorEmail(tutorEmail ?? "");
   };
 
-  const onSaveTutor = (workshopId: string) => {
-    updateWorkshopTutor(workshopId, editingTutorName || null, editingTutorEmail || null);
-
-    // TODO: trigger backend email invitation flow when tutor email is assigned/changed.
-    // sendTutorInvitationEmail({ workshopId, tutorName: editingTutorName, tutorEmail: editingTutorEmail });
-
-    setEditingWorkshopId(null);
-    setEditingTutorName("");
-    setEditingTutorEmail("");
+  const onSaveTutor = async (workshopId: string) => {
+    setWorkshopError(null);
+    try {
+      await updateWorkshopTutor(workshopId, null, editingTutorEmail || null);
+      setEditingWorkshopId(null);
+      setEditingTutorEmail("");
+    } catch {
+      setWorkshopError("Unable to update workshop tutor. Use an existing tutor email.");
+    }
   };
 
   const onCancelTutorEdit = () => {
     setEditingWorkshopId(null);
-    setEditingTutorName("");
     setEditingTutorEmail("");
   };
 
-  const onUploadCsv = (workshopId: string, event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const text = typeof reader.result === "string" ? reader.result : "";
-      const students = parseStudentsCsv(text);
-      // Store only parsed CSV students; no synthetic entries are added.
-      // We intentionally replace to keep source-of-truth aligned with latest upload.
-      upsertWorkshopStudentsFromCsv(workshopId, students);
-    };
-    reader.readAsText(file);
-    event.target.value = "";
-  };
-
-  const onConfirmDeleteWorkshop = () => {
+  const onConfirmDeleteWorkshop = async () => {
     if (!confirmDeleteWorkshopId) return;
-    deleteWorkshop(confirmDeleteWorkshopId);
-    setConfirmDeleteWorkshopId(null);
+    setWorkshopError(null);
+    try {
+      await deleteWorkshop(confirmDeleteWorkshopId);
+      setConfirmDeleteWorkshopId(null);
+    } catch {
+      setWorkshopError("Unable to delete workshop.");
+    }
   };
 
   return (
@@ -203,11 +161,17 @@ export function WorkshopsView() {
         </div>
       </header>
 
+      {workshopError && (
+        <section className="real-page-panel">
+          <p className="dashboard-empty">{workshopError}</p>
+        </section>
+      )}
+
       <section className="real-page-panel workshops-list">
         {workshopStats.length === 0 ? (
           <article className="prototype-card workshop-empty-card">
             <h2 className="section-card-title">No workshops configured</h2>
-            <p className="dashboard-empty">Create a workshop to start assigning tutors and uploading students.</p>
+            <p className="dashboard-empty">Create a workshop to start assigning tutors and viewing student memberships.</p>
           </article>
         ) : (
           workshopStats.map(({ workshop, studentCount, weeksCompleted, totalWeeks, progress, avgScore }) => {
@@ -222,12 +186,6 @@ export function WorkshopsView() {
 
                     {isEditing ? (
                       <div className="workshop-tutor-edit-row">
-                        <input
-                          value={editingTutorName}
-                          onChange={(e) => setEditingTutorName(e.target.value)}
-                          placeholder="Tutor name"
-                          className="workshop-input"
-                        />
                         <input
                           value={editingTutorEmail}
                           onChange={(e) => setEditingTutorEmail(e.target.value)}
@@ -247,7 +205,7 @@ export function WorkshopsView() {
                         <button
                           type="button"
                           className="workshop-text-btn"
-                          onClick={() => onStartEditTutor(workshop.id, workshop.tutorName, workshop.tutorEmail)}
+                          onClick={() => onStartEditTutor(workshop.id, workshop.tutorEmail)}
                         >
                           Change
                         </button>
@@ -255,7 +213,12 @@ export function WorkshopsView() {
                           <button
                             type="button"
                             className="workshop-assign-self-btn"
-                            onClick={() => assignCurrentUserAsTutor(workshop.id)}
+                            onClick={() => {
+                              setWorkshopError(null);
+                              assignCurrentUserAsTutor(workshop.id).catch(() => {
+                                setWorkshopError("Unable to assign the current user as tutor.");
+                              });
+                            }}
                           >
                             Assign Myself as Tutor
                           </button>
@@ -293,16 +256,26 @@ export function WorkshopsView() {
                       </svg>
                       <span>Delete</span>
                     </button>
-                    <label className="workshop-upload-btn" htmlFor={`upload-${workshop.id}`}>
+                    <button
+                      type="button"
+                      className="workshop-upload-btn"
+                      style={{
+                        height: "42px",
+                        borderRadius: "12px",
+                        border: "1px solid #d7deec",
+                        background: "#f5f8fd",
+                        color: "#33445f",
+                        fontSize: "15px",
+                        fontWeight: 700,
+                        padding: "0 16px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                      }}
+                    >
                       Upload CSV
-                    </label>
-                    <input
-                      id={`upload-${workshop.id}`}
-                      type="file"
-                      accept=".csv"
-                      className="workshop-file-input"
-                      onChange={(e) => onUploadCsv(workshop.id, e)}
-                    />
+                    </button>
                     <Link href={`/workshops/${workshop.id}`} className="workshop-view-btn">
                       View Details
                     </Link>
@@ -340,7 +313,7 @@ export function WorkshopsView() {
               Delete Workshop?
             </h2>
             <p className="milestone-modal-body">
-              Are you sure you want to delete this workshop? This action removes uploaded students and recorded marks for that workshop.
+              Are you sure you want to delete this workshop? This action removes recorded marks for that workshop.
             </p>
             <div className="milestone-modal-actions">
               <button type="button" className="milestone-modal-btn-primary" onClick={onConfirmDeleteWorkshop}>
@@ -395,25 +368,6 @@ export function WorkshopsView() {
               </label>
 
               <label className="workshop-create-label" style={{ display: "grid", gap: "6px" }}>
-                <span style={{ fontSize: "15px", fontWeight: 600, color: "#33445f" }}>Tutor Name (Optional)</span>
-                <input
-                  value={newWorkshopTutorName}
-                  onChange={(e) => setNewWorkshopTutorName(e.target.value)}
-                  placeholder="e.g., John Smith"
-                  className="workshop-create-field"
-                  style={{
-                    width: "100%",
-                    height: "44px",
-                    border: "1px solid #d3dced",
-                    borderRadius: "10px",
-                    padding: "0 12px",
-                    fontSize: "16px",
-                    color: "#172033",
-                  }}
-                />
-              </label>
-
-              <label className="workshop-create-label" style={{ display: "grid", gap: "6px" }}>
                 <span style={{ fontSize: "15px", fontWeight: 600, color: "#33445f" }}>Tutor Email (Optional)</span>
                 <input
                   value={newWorkshopTutorEmail}
@@ -432,7 +386,7 @@ export function WorkshopsView() {
                 />
               </label>
               <p className="workshop-create-help" style={{ margin: "0", color: "#64758b", fontSize: "13px" }}>
-                If provided, an invitation email will be sent to the tutor.
+                Tutor assignment uses an existing tutor email.
               </p>
             </div>
 
@@ -464,7 +418,6 @@ export function WorkshopsView() {
                 onClick={() => {
                   setShowCreateModal(false);
                   setNewWorkshopName("");
-                  setNewWorkshopTutorName("");
                   setNewWorkshopTutorEmail("");
                 }}
                 style={{
