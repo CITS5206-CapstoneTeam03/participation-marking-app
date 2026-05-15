@@ -78,6 +78,6 @@ class StudentInDB(StudentInDBBase):
 #
 #7. Student Form
 #
-class StudentFormData(StudentBase):
+class StudentFormData(StudentCreate):
     """Schema for student form"""
     workshop_name: str
