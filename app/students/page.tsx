@@ -11,6 +11,7 @@ export default function StudentsPage() {
   const [search, setSearch] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [selectedWorkshopId, setSelectedWorkshopId] = useState<string>("");
+  const [importError, setImportError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const allStudents = useMemo(() => {
@@ -26,12 +27,16 @@ export default function StudentsPage() {
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     if (!q) return allStudents;
-    return allStudents.filter(
-      (s) =>
+    return allStudents.filter((s) => {
+      const displayFirst = s.preferredName?.trim() || s.firstName;
+      return (
         s.studentId.toLowerCase().includes(q) ||
-        `${s.preferredName ?? s.firstName} ${s.lastName}`.toLowerCase().includes(q) ||
-        s.email.toLowerCase().includes(q),
-    );
+        `${displayFirst} ${s.lastName}`.toLowerCase().includes(q) ||
+        s.firstName.toLowerCase().includes(q) ||
+        (s.preferredName?.toLowerCase() ?? "").includes(q) ||
+        s.email.toLowerCase().includes(q)
+      );
+    });
   }, [allStudents, search]);
 
   const totalStudents = allStudents.length;
@@ -65,12 +70,24 @@ export default function StudentsPage() {
   const targetWorkshopId = selectedWorkshopId || workshops[0]?.id;
 
   async function handleFile(file: File) {
-    if (!targetWorkshopId) return;
+    setImportError(null);
+    if (!targetWorkshopId) {
+      setImportError("No workshop available. Please create a workshop first.");
+      return;
+    }
     const text = await file.text();
     const students = parseCSV(text);
+    if (!students) {
+      setImportError("CSV is missing required columns. StudentID and Email are required.");
+      return;
+    }
+    if (students.length === 0) {
+      setImportError("No valid student rows found in the CSV.");
+      return;
+    }
     // TODO(backend): replace context upsert with POST /api/workshops/:id/students/bulk
     // and refresh the roster from the API response.
-    if (students) upsertWorkshopStudentsFromCsv(targetWorkshopId, students);
+    upsertWorkshopStudentsFromCsv(targetWorkshopId, students);
   }
 
   function handleDrop(e: React.DragEvent) {
@@ -175,6 +192,12 @@ export default function StudentsPage() {
             <input ref={fileInputRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleFileInput} />
           </div>
 
+          {importError && (
+            <p style={{ fontSize: 13, color: "#dc2626", marginBottom: 10, padding: "8px 12px", background: "#fef2f2", borderRadius: 8, border: "1px solid #fecaca" }}>
+              {importError}
+            </p>
+          )}
+
           <button
             type="button"
             onClick={downloadTemplate}
@@ -273,7 +296,7 @@ export default function StudentsPage() {
                 {filtered.map((student, i) => (
                   <tr key={`${student.workshopId}-${student.studentId}`} style={{ borderBottom: "1px solid var(--panel-border)", background: i % 2 === 0 ? "#fff" : "#fafbff" }}>
                     <td style={{ padding: "14px 12px", fontSize: 14, color: "#33445f", fontWeight: 600 }}>{student.studentId}</td>
-                    <td style={{ padding: "14px 12px", fontSize: 14, color: "#172033" }}>{student.preferredName ?? student.firstName} {student.lastName}</td>
+                    <td style={{ padding: "14px 12px", fontSize: 14, color: "#172033" }}>{student.preferredName?.trim() || student.firstName} {student.lastName}</td>
                     <td style={{ padding: "14px 12px", fontSize: 14, color: "#708097" }}>{student.email}</td>
                     <td style={{ padding: "14px 12px", fontSize: 14, color: "#33445f" }}>{student.workshopName}</td>
                   </tr>
