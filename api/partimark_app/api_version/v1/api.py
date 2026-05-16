@@ -8,6 +8,7 @@ from .routes import ( #type: ignore
     enabled_weeks,
     system_config,
     auth,
+    notifications,
 )
 
 api_router = APIRouter()
@@ -21,3 +22,4 @@ api_router.include_router(marks.router, prefix="/marks", tags=["Marks"], depende
 api_router.include_router(enabled_weeks.router, prefix="/enabled-weeks", tags=["Enabled Weeks"], dependencies=secure_deps)
 api_router.include_router(system_config.router, prefix="/system-config", tags=["System Config"], dependencies=secure_deps)
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+api_router.include_router(notifications.router, prefix="/notifications", tags=["Notifications"], dependencies=secure_deps)
