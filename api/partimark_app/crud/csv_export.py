@@ -12,11 +12,11 @@ def calculate_total_and_percent_mark(db: Session) -> dict[tuple[str,str,str], tu
 
     #Get max point
     config = get_current_system_config(db)
-    final = config.total_participation_points if config and config.total_participation_points > 0 else 1
+    final = config.total_participation_points if config and config.total_participation_points is not None and config.total_participation_points > 0 else 1
 
     return {
         (student_id, first_name, last_name): (total, round((total/final)*100,2))
-        for student_id, first_name, last_name, total in sum_marks
+        for student_id, first_name, last_name, _, total in sum_marks
     }
 
 def calculate_w6_total_and_percent_mark(db: Session) -> dict[tuple[str,str,str], tuple[int, float]]:
@@ -31,5 +31,5 @@ def calculate_w6_total_and_percent_mark(db: Session) -> dict[tuple[str,str,str],
 
     return {
         (student_id, first_name, last_name): (total, round((total/mid)*100,2))
-        for student_id, first_name, last_name, total in sum_marks
+        for student_id, first_name, last_name, _, total in sum_marks
     }
