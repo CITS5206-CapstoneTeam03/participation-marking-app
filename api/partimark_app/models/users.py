@@ -55,6 +55,13 @@ class User(Base):
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
+    # One-time token for account setup / password reset.
+    # The raw token is emailed; only its SHA-256 hash is persisted (never the raw value).
+    password_reset_token_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
+    password_reset_token_expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
