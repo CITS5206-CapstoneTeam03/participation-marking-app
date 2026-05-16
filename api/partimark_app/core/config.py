@@ -28,6 +28,17 @@ class Settings(BaseSettings):
     # Logic App Webhook Secret
     logic_app_secret: str | None = None
 
+    # SMTP Email Settings
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_user: str | None = None
+    smtp_pass: str | None = None
+    smtp_from_email: str | None = None
+
+    # Base URL of the app — used to build set-password/reset links in emails.
+    # Set FRONTEND_URL=https://your-api-domain.com in .env for production.
+    frontend_url: str = "http://localhost:8000"
+
     # You can map env variables regardless of case
     model_config = SettingsConfigDict(
         env_file=str(ROOT_DIR / ".env"),
