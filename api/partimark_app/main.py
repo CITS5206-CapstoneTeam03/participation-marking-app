@@ -41,8 +41,8 @@ app = FastAPI(
 
 app.include_router(logic_router)
 
-# Configure the Admin interface
-admin = Admin(app, engine)
+# Configure the Admin interface under /api so Azure Static Web Apps proxies it.
+admin = Admin(app, engine, base_url="/api/admin")
 
 for view in all_admin_views:
     admin.add_view(view)
