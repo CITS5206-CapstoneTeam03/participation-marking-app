@@ -2,11 +2,35 @@ from fastapi import Depends, FastAPI, APIRouter, HTTPException
 from sqlalchemy.orm import Session
 from sqladmin import Admin
 
+from partimark_app.core.config import settings
 from partimark_app.db.db import get_db, engine
 from partimark_app.models.users import User
 from partimark_app.admin.views import all_admin_views
 from partimark_app.api_version.v1.api import api_router
 from partimark_app.services.logic_app.logicApp import router as logic_router
+
+
+class PublicAdminUrlMiddleware:
+    def __init__(self, app, host: str, scheme: str) -> None:
+        self.app = app
+        self.host = host
+        self.scheme = scheme
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http" and scope.get("path", "").startswith("/api/admin"):
+            headers = [
+                (name, value)
+                for name, value in scope.get("headers", [])
+                if name.lower() != b"host"
+            ]
+            headers.append((b"host", self.host.encode("latin-1")))
+
+            scope = dict(scope)
+            scope["scheme"] = self.scheme
+            scope["server"] = (self.host, 443 if self.scheme == "https" else 80)
+            scope["headers"] = headers
+
+        await self.app(scope, receive, send)
 
 # ==========================================
 # 1. Swagger UI Metadata Best Practices
@@ -37,6 +61,12 @@ app = FastAPI(
         "email": "admin@example.com",
     },
     openapi_tags=tags_metadata,
+)
+
+app.add_middleware(
+    PublicAdminUrlMiddleware,
+    host=settings.public_app_host,
+    scheme=settings.public_app_scheme,
 )
 
 app.include_router(logic_router)

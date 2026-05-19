@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     # FastAPI Application Settings
     app_name: str = "PartiMark API"
     version: str = "1.0.0"
+    public_app_host: str = "partimark.app"
+    public_app_scheme: str = "https"
 
     # PASETO / Auth Settings
     # Generate a strong secret with: python -c "import secrets; print(secrets.token_hex(32))"
