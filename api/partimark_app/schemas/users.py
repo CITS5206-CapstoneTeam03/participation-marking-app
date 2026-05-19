@@ -2,9 +2,11 @@ from datetime import datetime
 from typing import Optional
 
 import bcrypt
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, TypeAdapter, field_validator
 
 from ..models.users import UserRole
+
+_email_adapter = TypeAdapter(EmailStr)
 
 
 #
@@ -12,7 +14,7 @@ from ..models.users import UserRole
 #
 class UserBase(BaseModel):
     """Shared properties across most User-related schemas."""
-    email: EmailStr
+    email: str
     first_name: str = Field(..., max_length=100)
     last_name: str = Field(..., max_length=100)
     preferred_name: Optional[str] = Field(None, max_length=100)
@@ -32,6 +34,11 @@ class UserCreate(UserBase):
         description="The raw password. This should be hashed before saving to the database.",
     )
 
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, value: str) -> str:
+        return str(_email_adapter.validate_python(value))
+
     def get_hashed_password(self) -> str:
         """Utility method to securely hash the password using bcrypt."""
         salt = bcrypt.gensalt()
@@ -47,7 +54,7 @@ class UserUpdate(BaseModel):
     Properties that can be updated via API.
     All fields are optional to support partial updates (PATCH methodology).
     """
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     first_name: Optional[str] = Field(None, max_length=100)
     last_name: Optional[str] = Field(None, max_length=100)
     preferred_name: Optional[str] = Field(None, max_length=100)
@@ -55,6 +62,13 @@ class UserUpdate(BaseModel):
     role: Optional[UserRole] = None
     is_active: Optional[bool] = None
     password: Optional[str] = Field(None, min_length=8)
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return str(_email_adapter.validate_python(value))
 
 
 #
