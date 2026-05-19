@@ -25,11 +25,14 @@ export function CoordinatorDashboard() {
 
     Promise.all(
       workshops.map(async (workshop) => {
-        const weekEntries = await Promise.all(
+        const weekResults = await Promise.allSettled(
           enabledWeeks.map(async (week) => {
             const marks = await getMarksByWorkshopAndWeek(workshop.id, week.weekNumber);
             return [week.weekNumber, marks] as const;
           }),
+        );
+        const weekEntries = weekResults.flatMap((result) =>
+          result.status === "fulfilled" ? [result.value] : [],
         );
         return [workshop.id, Object.fromEntries(weekEntries)] as const;
       }),
@@ -37,10 +40,6 @@ export function CoordinatorDashboard() {
       .then((entries) => {
         if (!isCurrent) return;
         setMarksByWorkshopWeek(Object.fromEntries(entries));
-      })
-      .catch(() => {
-        if (!isCurrent) return;
-        setMarksByWorkshopWeek({});
       });
 
     return () => {

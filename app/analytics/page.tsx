@@ -29,12 +29,13 @@ function getDisplayName(firstName: string, lastName: string, preferredName?: str
 
 function escapeCsvValue(value: string | number | null | undefined) {
   const text = value === null || value === undefined ? "" : String(value);
+  const safeText = /^[=+\-@]/.test(text) ? `'${text}` : text;
 
-  if (/[",\n]/.test(text)) {
-    return `"${text.replace(/"/g, '""')}"`;
+  if (/[",\n]/.test(safeText)) {
+    return `"${safeText.replace(/"/g, '""')}"`;
   }
 
-  return text;
+  return safeText;
 }
 
 function toFileSafeSegment(value: string) {
@@ -78,11 +79,14 @@ function AnalyticsContent() {
 
     Promise.all(
       visibleWorkshops.map(async (workshop) => {
-        const weekEntries = await Promise.all(
+        const weekResults = await Promise.allSettled(
           enabledWeeks.map(async (week) => {
             const marks = await getMarksByWorkshopAndWeek(workshop.id, week.weekNumber);
             return [week.weekNumber, marks] as const;
           }),
+        );
+        const weekEntries = weekResults.flatMap((result) =>
+          result.status === "fulfilled" ? [result.value] : [],
         );
         return [workshop.id, Object.fromEntries(weekEntries)] as const;
       }),
@@ -90,10 +94,6 @@ function AnalyticsContent() {
       .then((entries) => {
         if (!isCurrent) return;
         setMarksByWorkshopWeek(Object.fromEntries(entries));
-      })
-      .catch(() => {
-        if (!isCurrent) return;
-        setMarksByWorkshopWeek({});
       });
 
     return () => {

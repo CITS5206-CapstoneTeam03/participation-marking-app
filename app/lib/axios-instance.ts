@@ -2,6 +2,21 @@ import axios, { AxiosError, type AxiosRequestConfig } from "axios";
 import { ApiError } from "../interface/apiTypes";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "/api";
+const AUTH_TOKEN_KEY = "pms-auth-token";
+const AUTH_EMAIL_KEY = "pms-auth-email";
+
+function clearStoredAuth() {
+  if (typeof window === "undefined") return;
+
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+  localStorage.removeItem(AUTH_EMAIL_KEY);
+}
+
+function redirectToLogin() {
+  if (typeof window === "undefined" || window.location.pathname === "/login") return;
+
+  window.location.assign("/login");
+}
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -14,7 +29,7 @@ export const apiClient = axios.create({
 // Attach stored JWT to every request if present
 apiClient.interceptors.request.use((config) => {
   const token =
-    typeof window !== "undefined" ? localStorage.getItem("pms-auth-token") : null;
+    typeof window !== "undefined" ? localStorage.getItem(AUTH_TOKEN_KEY) : null;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -26,6 +41,12 @@ apiClient.interceptors.response.use(
   (error: AxiosError) => {
     const status = error.response?.status ?? 500;
     const details = error.response?.data;
+
+    if (status === 401) {
+      clearStoredAuth();
+      redirectToLogin();
+    }
+
     const message =
       typeof details === "object" &&
         details !== null &&

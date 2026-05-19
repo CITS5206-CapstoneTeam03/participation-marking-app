@@ -106,28 +106,40 @@ export function MarkingView() {
 
   async function saveScore(studentId: string, score: Score) {
     if (!selectedWorkshopId) return;
-    const existingMark = marks.find((mark) => mark.student_id === studentId);
-    const savedMark = existingMark
-      ? await updateMark(existingMark.mark_id, { score })
-      : await createMark({
-          student_id: studentId,
-          workshop_id: Number(selectedWorkshopId),
-          week_number: activeWeekNumber,
-          score,
-        });
 
-    setLoadedMarkData((currentData) => {
-      const currentMarks = currentData?.workshopId === selectedWorkshopId
-        && currentData.weekNumber === activeWeekNumber
-        ? currentData.marks
-        : [];
-      const otherMarks = currentMarks.filter((mark) => mark.mark_id !== savedMark.mark_id);
-      return {
-        workshopId: selectedWorkshopId,
+    try {
+      const existingMark = marks.find((mark) => mark.student_id === studentId);
+      const savedMark = existingMark
+        ? await updateMark(existingMark.mark_id, { score })
+        : await createMark({
+            student_id: studentId,
+            workshop_id: Number(selectedWorkshopId),
+            week_number: activeWeekNumber,
+            score,
+          });
+
+      setLoadedMarkData((currentData) => {
+        const currentMarks = currentData?.workshopId === selectedWorkshopId
+          && currentData.weekNumber === activeWeekNumber
+          ? currentData.marks
+          : [];
+        const otherMarks = currentMarks.filter((mark) => mark.mark_id !== savedMark.mark_id);
+        return {
+          workshopId: selectedWorkshopId,
+          weekNumber: activeWeekNumber,
+          marks: [...otherMarks, savedMark],
+        };
+      });
+    } catch (error) {
+      console.error("Unable to save participation mark.", {
+        error,
+        score,
+        studentId,
         weekNumber: activeWeekNumber,
-        marks: [...otherMarks, savedMark],
-      };
-    });
+        workshopId: selectedWorkshopId,
+      });
+      throw error;
+    }
   }
 
   return (

@@ -1,5 +1,10 @@
 import type { NextConfig } from "next";
 
+const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000/api").replace(
+  /\/$/,
+  "",
+);
+
 const nextConfig: NextConfig = {
   skipTrailingSlashRedirect: true,
   images: {
@@ -9,31 +14,31 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/users/",
-        destination: "http://127.0.0.1:8000/api/users/",
+        destination: `${apiBaseUrl}/users/`,
       },
       {
         source: "/api/workshops/",
-        destination: "http://127.0.0.1:8000/api/workshops/",
+        destination: `${apiBaseUrl}/workshops/`,
       },
       {
         source: "/api/students/",
-        destination: "http://127.0.0.1:8000/api/students/",
+        destination: `${apiBaseUrl}/students/`,
       },
       {
         source: "/api/marks/",
-        destination: "http://127.0.0.1:8000/api/marks/",
+        destination: `${apiBaseUrl}/marks/`,
       },
       {
         source: "/api/enabled-weeks/",
-        destination: "http://127.0.0.1:8000/api/enabled-weeks/",
+        destination: `${apiBaseUrl}/enabled-weeks/`,
       },
       {
         source: "/api/system-config/",
-        destination: "http://127.0.0.1:8000/api/system-config/",
+        destination: `${apiBaseUrl}/system-config/`,
       },
       {
         source: "/api/:path*",
-        destination: "http://127.0.0.1:8000/api/:path*",
+        destination: `${apiBaseUrl}/:path*`,
       },
     ];
   },

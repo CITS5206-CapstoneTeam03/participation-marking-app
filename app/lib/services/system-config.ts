@@ -4,7 +4,7 @@ export type SystemConfigDto = {
   config_id: number;
   coordinator_user_id: string;
   max_weekly_score: number;
-  total_participation_points: number;
+  total_participation_points: number | null;
   is_configured: boolean;
   week6_lock_enabled: boolean;
   week6_locked_at: string | null;
@@ -17,7 +17,7 @@ export type SystemConfigDto = {
 export type SystemConfigPayload = {
   coordinator_user_id: string;
   max_weekly_score: number;
-  total_participation_points: number;
+  total_participation_points: number | null;
   is_configured: boolean;
   week6_lock_enabled: boolean;
   week6_locked_at: string | null;

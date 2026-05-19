@@ -83,6 +83,7 @@ interface AppContextValue {
   setConfigWeeks: (weeks: ConfigWeek[]) => void;
   maxWeeklyScore: number;
   setMaxWeeklyScore: (score: number) => void;
+  totalParticipationPoints: number | null;
   totalAssessmentWeighting: number;
   setTotalAssessmentWeighting: (weight: number) => void;
   saveSystemConfig: (options?: { weeks?: ConfigWeek[]; maxWeeklyScore?: number }) => Promise<void>;
@@ -149,6 +150,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [workshopStudents, setWorkshopStudents] = useState<Record<string, WorkshopStudent[]>>({});
   const [configWeeks, setConfigWeeks] = useState<ConfigWeek[]>(defaultConfigWeeks);
   const [maxWeeklyScore, setMaxWeeklyScore] = useState(3);
+  const [totalParticipationPoints, setTotalParticipationPoints] = useState<number | null>(null);
   const [totalAssessmentWeighting, setTotalAssessmentWeighting] = useState(20);
   const [systemConfigExists, setSystemConfigExists] = useState(false);
   const [sessionMarks, setSessionMarks] = useState<SessionMarks>({});
@@ -187,6 +189,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   function applySystemConfig(config: SystemConfigDto) {
     setMaxWeeklyScore(config.max_weekly_score);
+    setTotalParticipationPoints(config.total_participation_points);
     setConfigWeeks((currentWeeks) =>
       defaultConfigWeeks.map((week, index) => ({
         ...week,
@@ -442,7 +445,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const payload: SystemConfigPayload = {
       coordinator_user_id: currentUserId,
       max_weekly_score: weeklyScore,
-      total_participation_points: selectedWeeks.length * weeklyScore,
+      total_participation_points: selectedWeeks.length > 0 ? selectedWeeks.length * weeklyScore : null,
       is_configured: selectedWeeks.length > 0,
       week6_lock_enabled: week6Locked,
       week6_locked_at: week6Locked ? now : null,
@@ -481,7 +484,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const payload: SystemConfigPayload = {
         coordinator_user_id: currentUserId,
         max_weekly_score: maxWeeklyScore,
-        total_participation_points: selectedWeekCount * maxWeeklyScore,
+        total_participation_points: selectedWeekCount > 0 ? selectedWeekCount * maxWeeklyScore : null,
         is_configured: selectedWeekCount > 0,
         week6_lock_enabled: week6Locked,
         week6_locked_at: week6Locked ? now : null,
@@ -533,6 +536,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         workshopStudents,
         configWeeks, setConfigWeeks,
         maxWeeklyScore, setMaxWeeklyScore,
+        totalParticipationPoints,
         totalAssessmentWeighting, setTotalAssessmentWeighting,
         saveSystemConfig,
         saveEnabledWeeks,

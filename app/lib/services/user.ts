@@ -26,15 +26,31 @@ export type CreateUserInput = {
 
 export type UpdateUserInput = Partial<CreateUserInput>;
 
-export function getUsers(): Promise<UserDto[]> {
+const USER_PAGE_SIZE = 100;
+
+function getUserPage(skip: number): Promise<UserDto[]> {
     return apiRequest<UserDto[]>({
         method: "GET",
         url: "/users/",
         params: {
-            skip: 0,
-            limit: 100,
+            skip,
+            limit: USER_PAGE_SIZE,
         },
     });
+}
+
+export async function getUsers(): Promise<UserDto[]> {
+    const users: UserDto[] = [];
+    let skip = 0;
+    let page: UserDto[];
+
+    do {
+        page = await getUserPage(skip);
+        users.push(...page);
+        skip += USER_PAGE_SIZE;
+    } while (page.length === USER_PAGE_SIZE);
+
+    return users;
 }
 
 export function getUserById(userId: string): Promise<UserDto> {

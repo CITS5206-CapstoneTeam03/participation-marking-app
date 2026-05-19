@@ -10,9 +10,8 @@ export default function ConfigPage() {
     configWeeks: weeks,
     setConfigWeeks: setWeeks,
     maxWeeklyScore,
-    setMaxWeeklyScore,
+    totalParticipationPoints,
     totalAssessmentWeighting,
-    setTotalAssessmentWeighting,
     saveSystemConfig,
     saveEnabledWeeks,
   } = useAppContext();
@@ -21,7 +20,12 @@ export default function ConfigPage() {
   const [activeTab, setActiveTab] = useState<"unit" | "students">("unit");
 
   const selectedWeeks = weeks.filter((w) => w.enabled);
-  const totalPoints = selectedWeeks.length * maxWeeklyScore;
+  const totalPoints = totalParticipationPoints;
+  const totalPointsLabel = totalPoints ?? "Not configured";
+  const gradeValuePerPoint =
+    totalPoints && totalPoints > 0
+      ? `${(totalAssessmentWeighting / totalPoints).toFixed(2)}%`
+      : "Not configured";
 
   const markSaving = () => {
     setSaveError(null);
@@ -178,18 +182,9 @@ export default function ConfigPage() {
                 </label>
                 <input
                   id="max-weekly-score"
-                  type="number"
-                  min={1}
-                  max={3}
+                  type="text"
                   value={maxWeeklyScore}
-                  onChange={(e) => {
-                    markSaving();
-                    const v = Number(e.target.value);
-                    if (!Number.isNaN(v) && v >= 1 && v <= 3) {
-                      setMaxWeeklyScore(v);
-                      persistSystemConfig({ maxWeeklyScore: v });
-                    }
-                  }}
+                  readOnly
                   className="config-field-input"
                 />
               </div>
@@ -200,16 +195,9 @@ export default function ConfigPage() {
                 </label>
                 <input
                   id="total-weighting"
-                  type="number"
-                  min={0}
-                  max={100}
+                  type="text"
                   value={totalAssessmentWeighting}
-                  onChange={(e) => {
-                    markSaving();
-                    const v = Number(e.target.value);
-                    if (!Number.isNaN(v))
-                      setTotalAssessmentWeighting(Math.min(100, Math.max(0, v)));
-                  }}
+                  readOnly
                   className="config-field-input"
                 />
               </div>
@@ -220,13 +208,13 @@ export default function ConfigPage() {
                 </label>
                 <input
                   id="total-points"
-                  type="number"
-                  value={totalPoints}
+                  type="text"
+                  value={totalPointsLabel}
                   readOnly
                   className="config-field-input"
                 />
                 <p className="config-calc-hint">
-                  Auto-calculated: {selectedWeeks.length} weeks × {maxWeeklyScore} = {totalPoints}
+                  From backend configuration
                 </p>
               </div>
 
@@ -237,12 +225,12 @@ export default function ConfigPage() {
                 <input
                   id="per-point-value"
                   type="text"
-                  value={totalPoints > 0 ? `${(totalAssessmentWeighting / totalPoints).toFixed(2)}%` : "—"}
+                  value={gradeValuePerPoint}
                   readOnly
                   className="config-field-input"
                 />
                 <p className="config-calc-hint">
-                  Auto-calculated: {totalAssessmentWeighting}% ÷ {totalPoints} pts
+                  Based on backend participation points
                 </p>
               </div>
             </div>
