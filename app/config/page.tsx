@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { CoordinatorShell } from "../components/coordinator-shell";
 import { useAppContext } from "../context/app-context";
 
@@ -310,8 +311,24 @@ export default function ConfigPage() {
         <div className="panel p-7">
           <p className="text-lg font-bold tracking-tight text-[var(--navy)]">Student Management</p>
           <p className="mt-2 text-sm text-[var(--ink-soft)]">
-            Student roster management coming in a future release.
+            Import and manage student rosters for each workshop.
           </p>
+          <Link
+            href="/students"
+            style={{
+              display: "inline-block",
+              marginTop: 16,
+              padding: "10px 20px",
+              borderRadius: 10,
+              background: "#3f5efb",
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: 14,
+              textDecoration: "none",
+            }}
+          >
+            Go to Student Management →
+          </Link>
         </div>
       )}
     </CoordinatorShell>

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Float, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..db.db import Base
@@ -22,8 +22,8 @@ class SystemConfig(Base):
         index=True,
     )
 
-    max_weekly_score: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
-    total_participation_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    max_weekly_score: Mapped[int] = mapped_column(Integer, nullable=False, default=3.0)
+    total_participation_points: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=None)
 
     is_configured: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 

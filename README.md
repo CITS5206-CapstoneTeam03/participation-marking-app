@@ -19,7 +19,22 @@ npm run dev
 ### Backend
 
 #### Environment variables (`api/.env`)
-Create `api/.env` by copying `api/.env.example`, then paste your database info (from `documents/Teams`) into the variables:
+Create `api/.env` by copying `api/.env.example`, then fill in the required values.
+
+`api/partimark_app/core/config.py` loads settings from `api/.env` and requires `PASETO_SECRET_KEY` for auth token signing. Generate a local secret:
+
+```bash
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
+Then set the existing `PASETO_SECRET_KEY` entry in `api/.env`:
+
+```env
+PASETO_SECRET_KEY=<generated-value>
+```
+
+Keep this value private and do not commit it. The backend will fail to start if `PASETO_SECRET_KEY` is missing or left blank.
+
 Note: `.env` files are ignored by git (won’t be committed).
 
 #### 🐧 macOS / Linux

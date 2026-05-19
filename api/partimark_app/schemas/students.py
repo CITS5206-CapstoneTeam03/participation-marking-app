@@ -74,3 +74,10 @@ class StudentResponse(StudentInDBBase):
 class StudentInDB(StudentInDBBase):
     """Schema fully representing the database record internally."""
     pass
+
+#
+#7. Student Form
+#
+class StudentFormData(StudentCreate):
+    """Schema for student form"""
+    workshop_name: str
