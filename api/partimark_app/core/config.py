@@ -27,6 +27,12 @@ class Settings(BaseSettings):
     paseto_secret_key: str
     access_token_expire_minutes: int = 60  # 1 hour default
     
+    # Admin Bootstrapping (Optional)
+    # Used by the startup routine to provision an initial admin account if it doesn't exist
+    initial_admin_email: str | None = None
+    initial_admin_password: str | None = None
+    admin_url: str | None = None
+    
     # Logic App Webhook Secret
     logic_app_secret: str | None = None
 
