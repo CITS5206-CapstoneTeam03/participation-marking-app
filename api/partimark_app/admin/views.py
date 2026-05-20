@@ -1,4 +1,5 @@
 import logging
+import secrets
 
 import bcrypt
 from fastapi import Request
@@ -38,16 +39,16 @@ class UserAdmin(ModelView, model=User):
         "updated_configs",
         "memberships_created",
         "audit_logs",
+        "hashed_password",
     ]
 
     async def on_model_change(self, data: dict, model: User, is_created: bool, request: Request) -> None:
-        """Intercept save to hash the password and validate email uniqueness."""
-        # Hash password if a new one was provided
-        if "hashed_password" in data and data["hashed_password"]:
-            raw_pwd = data["hashed_password"]
-            if not raw_pwd.startswith("$2"):
-                salt = bcrypt.gensalt()
-                data["hashed_password"] = bcrypt.hashpw(raw_pwd.encode("utf-8"), salt).decode("utf-8")
+        """Intercept save to auto-generate a placeholder password on create and validate email on edit."""
+        # On create: generate a secure random placeholder password.
+        # The user will replace this via the activation email link — it is never directly usable.
+        if is_created:
+            random_bytes = secrets.token_bytes(32)
+            data["hashed_password"] = bcrypt.hashpw(random_bytes, bcrypt.gensalt()).decode("utf-8")
 
         # On edit: check that the new email isn't already taken by another user
         if not is_created and "email" in data:
@@ -68,6 +69,16 @@ class UserAdmin(ModelView, model=User):
             for field in _PROFILE_FIELDS:
                 if field in data:
                     data[field] = getattr(model, field, data[field])
+
+        # On edit: prevent admin from manually activating an account.
+        # is_active=True may only be set by the set-password activation flow (auth.py).
+        # Admins CAN deactivate (True → False) to suspend an account.
+        if not is_created and data.get("is_active") is True and not model.is_active:
+            raise ValueError(
+                "Cannot manually activate this account. "
+                "Use the 'Resend Welcome Email' or 'Send Password Reset' action to send the user "
+                "an activation link — the account activates automatically when they set their password."
+            )
 
     async def after_model_change(self, data: dict, model: User, is_created: bool, request: Request) -> None:
         """After a new user is saved, generate a set-password token and send a welcome email."""

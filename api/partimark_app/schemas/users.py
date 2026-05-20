@@ -18,7 +18,7 @@ class UserBase(BaseModel):
     preferred_name: Optional[str] = Field(None, max_length=100)
     display_name: str = Field(..., max_length=200)
     role: UserRole
-    is_active: bool = True
+    is_active: bool = False  # Inactive until user completes account activation
 
 
 #

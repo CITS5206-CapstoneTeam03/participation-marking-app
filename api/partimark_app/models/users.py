@@ -53,7 +53,7 @@ class User(Base):
         nullable=False,
     )
 
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     # One-time token for account setup / password reset.
     # The raw token is emailed; only its SHA-256 hash is persisted (never the raw value).
