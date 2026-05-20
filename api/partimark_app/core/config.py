@@ -18,12 +18,20 @@ class Settings(BaseSettings):
     # FastAPI Application Settings
     app_name: str = "PartiMark API"
     version: str = "1.0.0"
+    public_app_host: str = "partimark.app"
+    public_app_scheme: str = "https"
 
     # PASETO / Auth Settings
     # Generate a strong secret with: python -c "import secrets; print(secrets.token_hex(32))"
     # Add PASETO_SECRET_KEY=<value> to your .env file.
     paseto_secret_key: str
     access_token_expire_minutes: int = 60  # 1 hour default
+    
+    # Admin Bootstrapping (Optional)
+    # Used by the startup routine to provision an initial admin account if it doesn't exist
+    initial_admin_email: str | None = None
+    initial_admin_password: str | None = None
+    admin_url: str | None = None
     
     # Logic App Webhook Secret
     logic_app_secret: str | None = None
