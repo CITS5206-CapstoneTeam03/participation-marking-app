@@ -7,6 +7,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+from partimark_app.core.config import settings
 from partimark_app.db.init_db import init_db
 from partimark_app.db.db import get_db, engine, SessionLocal
 from partimark_app.models.users import User
@@ -15,6 +16,28 @@ from partimark_app.api_version.v1.api import api_router
 from partimark_app.services.logic_app.logicApp import router as logic_router
 from partimark_app.admin.auth import authentication_backend
 from partimark_app.core.config import settings
+
+class PublicAdminUrlMiddleware:
+    def __init__(self, app, host: str, scheme: str) -> None:
+        self.app = app
+        self.host = host
+        self.scheme = scheme
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http" and scope.get("path", "").startswith("/api/admin"):
+            headers = [
+                (name, value)
+                for name, value in scope.get("headers", [])
+                if name.lower() != b"host"
+            ]
+            headers.append((b"host", self.host.encode("latin-1")))
+
+            scope = dict(scope)
+            scope["scheme"] = self.scheme
+            scope["server"] = (self.host, 443 if self.scheme == "https" else 80)
+            scope["headers"] = headers
+
+        await self.app(scope, receive, send)
 
 # ==========================================
 # 1. Swagger UI Metadata Best Practices
@@ -54,10 +77,16 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.add_middleware(
+    PublicAdminUrlMiddleware,
+    host=settings.public_app_host,
+    scheme=settings.public_app_scheme,
+)
+
 app.include_router(logic_router)
 
 if settings.admin_url:
-    # Configure the Admin interface to be served under admin_url
+    # Configure the Admin interface under /api so Azure Static Web Apps proxies it. to be served under admin_url
     # This ensures Azure Static Web Apps automatically proxies traffic to it.
     admin = Admin(app, engine, base_url=settings.admin_url, authentication_backend=authentication_backend)
 
