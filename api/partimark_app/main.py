@@ -1,6 +1,9 @@
 from fastapi import Depends, FastAPI, APIRouter, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from sqladmin import Admin
+from pathlib import Path
 from contextlib import asynccontextmanager
 import logging
 
@@ -37,6 +40,8 @@ class PublicAdminUrlMiddleware:
             scope["headers"] = headers
 
         await self.app(scope, receive, send)
+
+STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 # ==========================================
 # 1. Swagger UI Metadata Best Practices
@@ -83,6 +88,14 @@ app.add_middleware(
 )
 
 app.include_router(logic_router)
+
+# Serve the static folder (reset_password.html etc.)
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+# Public route: email links point here → serves the set-password HTML page
+@app.get("/reset-password", include_in_schema=False)
+def reset_password_page():
+    return FileResponse(str(STATIC_DIR / "reset_password.html"))
 
 if settings.admin_url:
     # Configure the Admin interface under /api so Azure Static Web Apps proxies it. to be served under admin_url

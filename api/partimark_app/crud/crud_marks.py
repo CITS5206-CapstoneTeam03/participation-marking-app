@@ -13,13 +13,14 @@ def get_mark(db: Session, mark_id: int) -> Optional[ParticipationMark]:
     return db.query(ParticipationMark).filter(ParticipationMark.mark_id == mark_id).first()
 
 
-def get_all_sum_marks(db: Session) -> List[Tuple[str, str, str, int]]:
+def get_all_sum_marks(db: Session) -> List[Tuple[str, str, str, str, int]]:
     """Retrieve student IDs, names, and their total aggregated marks."""
     return (
         db.query(
             ParticipationMark.student_id,
             Student.first_name,
             Student.last_name,
+            Student.email,
             func.sum(ParticipationMark.score).label("total")
         )
         .join(Student, ParticipationMark.student_id == Student.student_id)
@@ -28,18 +29,20 @@ def get_all_sum_marks(db: Session) -> List[Tuple[str, str, str, int]]:
         .group_by(
             ParticipationMark.student_id,
             Student.first_name,
-            Student.last_name
+            Student.last_name,
+            Student.email
         )
         .all()
     )
 
-def get_all_6w_sum_marks(db: Session) -> List[Tuple[str, str, str, int]]:
+def get_all_6w_sum_marks(db: Session) -> List[Tuple[str, str, str, str, int]]:
     """Retrieve student IDs, names, and their total aggregated marks."""
     return (
         db.query(
             ParticipationMark.student_id,
             Student.first_name,
             Student.last_name,
+            Student.email,
             func.sum(ParticipationMark.score).label("total")
         )
         .join(Student, ParticipationMark.student_id == Student.student_id)
@@ -51,7 +54,8 @@ def get_all_6w_sum_marks(db: Session) -> List[Tuple[str, str, str, int]]:
         .group_by(
             ParticipationMark.student_id,
             Student.first_name,
-            Student.last_name
+            Student.last_name,
+            Student.email
         )
         .all()
     )

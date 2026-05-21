@@ -18,7 +18,7 @@ class UserBase(BaseModel):
     preferred_name: Optional[str] = Field(None, max_length=100)
     display_name: str = Field(..., max_length=200)
     role: UserRole
-    is_active: bool = True
+    is_active: bool = False  # Inactive until user completes account activation
 
 
 #
@@ -40,21 +40,32 @@ class UserCreate(UserBase):
 
 
 #
-# 3. HTTP PUT / PATCH (Update)
+# Self-update schema — for authenticated users editing their own profile.
+# Email, role, is_active, and password are intentionally excluded.
+# These are controlled by admins only.
 #
-class UserUpdate(BaseModel):
-    """
-    Properties that can be updated via API.
-    All fields are optional to support partial updates (PATCH methodology).
-    """
-    email: Optional[EmailStr] = None
+class UserSelfUpdate(BaseModel):
+    """Fields a user is permitted to update on their own account."""
     first_name: Optional[str] = Field(None, max_length=100)
     last_name: Optional[str] = Field(None, max_length=100)
     preferred_name: Optional[str] = Field(None, max_length=100)
     display_name: Optional[str] = Field(None, max_length=200)
-    role: Optional[UserRole] = None
-    is_active: Optional[bool] = None
-    password: Optional[str] = Field(None, min_length=8)
+
+
+#
+# First-login / account activation schema.
+# Submitted from reset_password.html when a newly created user sets their password.
+# Requires name fields so the user completes their profile in one step.
+# Admin cannot use this endpoint — it is token-gated and unauthenticated.
+#
+class UserFirstLoginSetup(BaseModel):
+    """Payload for the account-activation (set-password) form."""
+    token: str = Field(..., description="One-time token from the welcome email.")
+    new_password: str = Field(..., min_length=8, description="Chosen password (min 8 chars).")
+    first_name: str = Field(..., max_length=100)
+    last_name: str = Field(..., max_length=100)
+    preferred_name: Optional[str] = Field(None, max_length=100)
+    display_name: str = Field(..., max_length=200)
 
 
 #

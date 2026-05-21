@@ -1,4 +1,4 @@
-from .users import UserBase, UserCreate, UserUpdate, UserResponse, UserInDB
+from .users import UserBase, UserCreate, UserSelfUpdate, UserFirstLoginSetup, UserResponse, UserInDB
 from .students import StudentBase, StudentCreate, StudentUpdate, StudentResponse, StudentInDB
 from .workshops import WorkshopBase, WorkshopCreate, WorkshopUpdate, WorkshopResponse, WorkshopInDB
 from .marks import MarkBase, MarkCreate, MarkUpdate, MarkResponse, MarkInDB
@@ -32,7 +32,8 @@ from .audit_logs import (
 __all__ = [
     "UserBase",
     "UserCreate",
-    "UserUpdate",
+    "UserSelfUpdate",
+    "UserFirstLoginSetup",
     "UserResponse",
     "UserInDB",
     "StudentBase",
