@@ -10,7 +10,6 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-from partimark_app.core.config import settings
 from partimark_app.db.init_db import init_db
 from partimark_app.db.db import get_db, engine, SessionLocal
 from partimark_app.models.users import User
