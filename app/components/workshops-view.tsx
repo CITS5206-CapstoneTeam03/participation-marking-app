@@ -301,7 +301,7 @@ export function WorkshopsView() {
                       <span>Delete</span>
                     </button>
                     <label className="workshop-upload-btn" htmlFor={`upload-${workshop.id}`}>
-                      Upload CSV
+                      Upload CSV / Excel
                     </label>
                     <input
                       id={`upload-${workshop.id}`}
@@ -326,7 +326,7 @@ export function WorkshopsView() {
                     <p className="workshop-stat-value">{weeksCompleted} / {totalWeeks}</p>
                   </div>
                   <div>
-                    <p className="workshop-stat-label">Progress</p>
+                    <p className="workshop-stat-label">Marking Progress</p>
                     <p className="workshop-stat-value">{progress.toFixed(0)}%</p>
                   </div>
                   <div>
