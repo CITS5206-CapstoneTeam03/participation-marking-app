@@ -256,26 +256,6 @@ export function WorkshopsView() {
                       </svg>
                       <span>Delete</span>
                     </button>
-                    <button
-                      type="button"
-                      className="workshop-upload-btn"
-                      style={{
-                        height: "42px",
-                        borderRadius: "12px",
-                        border: "1px solid #d7deec",
-                        background: "#f5f8fd",
-                        color: "#33445f",
-                        fontSize: "15px",
-                        fontWeight: 700,
-                        padding: "0 16px",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Upload CSV
-                    </button>
                     <Link href={`/workshops/${workshop.id}`} className="workshop-view-btn">
                       View Details
                     </Link>

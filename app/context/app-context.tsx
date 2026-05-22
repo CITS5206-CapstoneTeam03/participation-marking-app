@@ -79,7 +79,6 @@ interface AppContextValue {
   ) => Promise<void>;
   assignCurrentUserAsTutor: (workshopId: string) => Promise<void>;
   workshopStudents: Record<string, WorkshopStudent[]>;
-  upsertWorkshopStudentsFromCsv: (workshopId: string, students: WorkshopStudent[]) => void;
   configWeeks: ConfigWeek[];
   setConfigWeeks: (weeks: ConfigWeek[]) => void;
   maxWeeklyScore: number;
@@ -427,11 +426,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await refreshWorkshops();
   }
 
-  function upsertWorkshopStudentsFromCsv(workshopId: string, students: WorkshopStudent[]) {
-    const cleaned = students.filter((student) => student.studentId && student.email);
-    setWorkshopStudents((prev) => ({ ...prev, [workshopId]: cleaned }));
-  }
-
   async function saveSystemConfig(options?: { weeks?: ConfigWeek[]; maxWeeklyScore?: number }) {
     if (!currentUserId) return;
 
@@ -537,7 +531,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         logout,
         viewRole, setViewRole,
         workshops, setWorkshops, createWorkshop, deleteWorkshop, updateWorkshopTutor, assignCurrentUserAsTutor,
-        workshopStudents, upsertWorkshopStudentsFromCsv,
+        workshopStudents,
         configWeeks, setConfigWeeks,
         maxWeeklyScore,
         totalParticipationPoints,
