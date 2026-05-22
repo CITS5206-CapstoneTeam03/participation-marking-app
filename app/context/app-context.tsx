@@ -59,7 +59,6 @@ interface AppContextValue {
   configWeeks: ConfigWeek[];
   setConfigWeeks: (weeks: ConfigWeek[]) => void;
   maxWeeklyScore: number;
-  setMaxWeeklyScore: (score: number) => void;
   totalAssessmentWeighting: number;
   setTotalAssessmentWeighting: (weight: number) => void;
   activeWorkshopId: string | null;
@@ -83,7 +82,6 @@ type PersistedState = Partial<{
   workshops: WorkshopRecord[];
   workshopStudents: Record<string, WorkshopStudent[]>;
   configWeeks: ConfigWeek[];
-  maxWeeklyScore: number;
   totalAssessmentWeighting: number;
   sessionMarks: SessionMarks;
   activeWorkshopId: string | null;
@@ -115,7 +113,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (Array.isArray(saved.configWeeks) && saved.configWeeks.length === defaultConfigWeeks.length) {
       setConfigWeeks(saved.configWeeks);
     }
-    if (typeof saved.maxWeeklyScore === "number") setMaxWeeklyScore(saved.maxWeeklyScore);
     if (typeof saved.totalAssessmentWeighting === "number") {
       setTotalAssessmentWeighting(saved.totalAssessmentWeighting);
     }
@@ -186,7 +183,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
           workshops,
           workshopStudents,
           configWeeks,
-          maxWeeklyScore,
           totalAssessmentWeighting,
           sessionMarks,
           activeWorkshopId,
@@ -204,7 +200,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     workshops,
     workshopStudents,
     configWeeks,
-    maxWeeklyScore,
     totalAssessmentWeighting,
     sessionMarks,
     activeWorkshopId,
@@ -372,7 +367,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         workshops, setWorkshops, createWorkshop, deleteWorkshop, updateWorkshopTutor, assignCurrentUserAsTutor,
         workshopStudents, upsertWorkshopStudentsFromCsv,
         configWeeks, setConfigWeeks,
-        maxWeeklyScore, setMaxWeeklyScore,
+        maxWeeklyScore,
         totalAssessmentWeighting, setTotalAssessmentWeighting,
         activeWorkshopId, setActiveWorkshopId,
         sessionMarks, setMark, clearWeekMarks, getWeekMarkedCount,
