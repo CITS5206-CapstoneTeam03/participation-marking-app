@@ -1,7 +1,9 @@
 import axios, { AxiosError, type AxiosRequestConfig } from "axios";
 import { ApiError } from "../interface/apiTypes";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "/api";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  (process.env.NODE_ENV === "development" ? "http://127.0.0.1:8000/api" : "/api");
 const AUTH_TOKEN_KEY = "pms-auth-token";
 const AUTH_EMAIL_KEY = "pms-auth-email";
 

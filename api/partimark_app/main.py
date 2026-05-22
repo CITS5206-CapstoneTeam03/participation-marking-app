@@ -1,6 +1,7 @@
 from fastapi import Depends, FastAPI, APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqladmin import Admin
 from pathlib import Path
@@ -85,6 +86,19 @@ app.add_middleware(
     PublicAdminUrlMiddleware,
     host=settings.public_app_host,
     scheme=settings.public_app_scheme,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:4280",
+        "http://127.0.0.1:4280",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(logic_router)
