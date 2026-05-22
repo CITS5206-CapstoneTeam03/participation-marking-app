@@ -177,9 +177,7 @@ export default function ConfigPage() {
               </div>
 
               <div className="config-field">
-                <label htmlFor="max-weekly-score" className="config-field-label">
-                  Max Weekly Score
-                </label>
+                <label htmlFor="max-weekly-score" className="config-field-label">Max Weekly Score</label>
                 <input
                   id="max-weekly-score"
                   type="text"

@@ -27,8 +27,25 @@ class Settings(BaseSettings):
     paseto_secret_key: str
     access_token_expire_minutes: int = 60  # 1 hour default
     
+    # Admin Bootstrapping (Optional)
+    # Used by the startup routine to provision an initial admin account if it doesn't exist
+    initial_admin_email: str | None = None
+    initial_admin_password: str | None = None
+    admin_url: str | None = None
+    
     # Logic App Webhook Secret
     logic_app_secret: str | None = None
+
+    # SMTP Email Settings
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_user: str | None = None
+    smtp_pass: str | None = None
+    smtp_from_email: str | None = None
+
+    # Base URL of the app — used to build set-password/reset links in emails.
+    # Set FRONTEND_URL=https://your-api-domain.com in .env for production.
+    frontend_url: str = "http://localhost:8000"
 
     # You can map env variables regardless of case
     model_config = SettingsConfigDict(
