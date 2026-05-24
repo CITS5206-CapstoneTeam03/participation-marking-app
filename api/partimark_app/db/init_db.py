@@ -24,7 +24,14 @@ def init_db(db: Session) -> None:
             # Prepare data for the DB model: exclude raw password and include hashed_password
             user_data = user_in.model_dump(exclude={"password"})
             user_data["hashed_password"] = user_in.get_hashed_password()
-            
-            crud_users.create_user(db, user_data=user_data)
+            user_data["is_active"] = True
+
+            from sqlalchemy.exc import IntegrityError
+            try:
+                crud_users.create_user(db, user_data=user_data)
+                print(f"Admin user {settings.initial_admin_email} successfully bootstrapped.")
+            except IntegrityError:
+                db.rollback()
+                print(f"Admin user {settings.initial_admin_email} was created by another worker. Skipping.")
         else:
             print(f"Admin user {settings.initial_admin_email} already exists. Skipping bootstrap.")
