@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from partimark_app.core.config import settings
 from partimark_app.crud import crud_users
 from partimark_app.schemas.users import UserCreate
@@ -26,7 +27,6 @@ def init_db(db: Session) -> None:
             user_data["hashed_password"] = user_in.get_hashed_password()
             user_data["is_active"] = True
             
-            from sqlalchemy.exc import IntegrityError
             try:
                 crud_users.create_user(db, user_data=user_data)
                 print(f"Admin user {settings.initial_admin_email} successfully bootstrapped.")
