@@ -5,6 +5,7 @@ out/
 
 # API
 api/.env
+api/seed_test_data.py
 **/__pycache__/
 *.py[cod]
 *$py.class

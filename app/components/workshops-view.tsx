@@ -1,8 +1,36 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { type ChangeEvent, useMemo, useState } from "react";
 import Link from "next/link";
-import { useAppContext } from "../context/app-context";
+import { read, utils } from "xlsx";
+import { useAppContext, type WorkshopStudent } from "../context/app-context";
+
+function parseStudentsCsv(text: string): WorkshopStudent[] {
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length === 0) return [];
+
+  const header = lines[0].split(",").map((value) => value.trim().toLowerCase());
+  const studentIdIdx = header.findIndex((h) => ["studentid", "student_id", "student id", "id"].includes(h));
+  const firstNameIdx = header.findIndex((h) => ["firstname", "first_name", "first name", "givenname"].includes(h));
+  const lastNameIdx = header.findIndex((h) => ["lastname", "last_name", "last name", "surname"].includes(h));
+  const emailIdx = header.findIndex((h) => ["email", "emailaddress", "email address"].includes(h));
+  const preferredNameIdx = header.findIndex((h) => ["preferredname", "preferred_name", "preferred name"].includes(h));
+
+  return lines.slice(1).map((line) => {
+    const cols = line.split(",").map((value) => value.trim());
+    return {
+      studentId: studentIdIdx >= 0 ? (cols[studentIdIdx] ?? "") : "",
+      firstName: firstNameIdx >= 0 ? (cols[firstNameIdx] ?? "") : "",
+      lastName: lastNameIdx >= 0 ? (cols[lastNameIdx] ?? "") : "",
+      email: emailIdx >= 0 ? (cols[emailIdx] ?? "") : "",
+      preferredName: preferredNameIdx >= 0 ? cols[preferredNameIdx] : undefined,
+    } satisfies WorkshopStudent;
+  }).filter((student) => student.studentId && student.email);
+}
 
 export function WorkshopsView() {
   const {
@@ -12,6 +40,7 @@ export function WorkshopsView() {
     deleteWorkshop,
     updateWorkshopTutor,
     assignCurrentUserAsTutor,
+    upsertWorkshopStudentsFromCsv,
     currentUserName,
     sessionMarks,
     configWeeks,
@@ -102,6 +131,32 @@ export function WorkshopsView() {
   const onCancelTutorEdit = () => {
     setEditingWorkshopId(null);
     setEditingTutorEmail("");
+  };
+
+  const onUploadCsv = async (workshopId: string, event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    event.target.value = "";
+
+    try {
+      const isSpreadsheet = /\.(xlsx|xls)$/i.test(file.name);
+      let students: WorkshopStudent[];
+
+      if (isSpreadsheet) {
+        const buffer = await file.arrayBuffer();
+        const wb = read(buffer);
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        if (!sheet) return;
+        students = parseStudentsCsv(utils.sheet_to_csv(sheet));
+      } else {
+        students = parseStudentsCsv(await file.text());
+      }
+
+      upsertWorkshopStudentsFromCsv(workshopId, students);
+      setWorkshopError(null);
+    } catch {
+      setWorkshopError("Unable to import students. Check the CSV or Excel file format.");
+    }
   };
 
   const onConfirmDeleteWorkshop = async () => {
@@ -256,6 +311,16 @@ export function WorkshopsView() {
                       </svg>
                       <span>Delete</span>
                     </button>
+                    <label className="workshop-upload-btn" htmlFor={`upload-${workshop.id}`}>
+                      Upload CSV / Excel
+                    </label>
+                    <input
+                      id={`upload-${workshop.id}`}
+                      type="file"
+                      accept=".csv,.xlsx,.xls"
+                      className="workshop-file-input"
+                      onChange={(e) => onUploadCsv(workshop.id, e)}
+                    />
                     <Link href={`/workshops/detail?id=${workshop.id}`} className="workshop-view-btn">
                       View Details
                     </Link>

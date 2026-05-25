@@ -2,19 +2,16 @@ from datetime import datetime
 from typing import Optional
 
 import bcrypt
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, TypeAdapter, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from ..models.users import UserRole
-
-_email_adapter = TypeAdapter(EmailStr)
-
 
 #
 # 1. Base Schema
 #
 class UserBase(BaseModel):
     """Shared properties across most User-related schemas."""
-    email: str
+    email: EmailStr
     first_name: str = Field(..., max_length=100)
     last_name: str = Field(..., max_length=100)
     preferred_name: Optional[str] = Field(None, max_length=100)
@@ -33,11 +30,6 @@ class UserCreate(UserBase):
         min_length=8,
         description="The raw password. This should be hashed before saving to the database.",
     )
-
-    @field_validator("email")
-    @classmethod
-    def validate_email(cls, value: str) -> str:
-        return str(_email_adapter.validate_python(value))
 
     def get_hashed_password(self) -> str:
         """Utility method to securely hash the password using bcrypt."""

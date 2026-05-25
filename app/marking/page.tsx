@@ -50,9 +50,9 @@ export default function MarkingPage() {
         if (!isCurrent) return;
         setMarksByWeek(Object.fromEntries(entries));
       })
-      .catch(() => {
+      .catch((error) => {
         if (!isCurrent) return;
-        setMarksByWeek({});
+        console.error("Unable to load marking progress.", error);
       });
 
     return () => {

@@ -4,12 +4,11 @@ import { createContext, useCallback, useContext, useState, useEffect, useRef, ty
 import type { ConfigWeek, Score } from "../data/mock-data";
 import {
   loginApi,
-  getAuthenticatedUserByEmail,
+  getAuthenticatedUser,
   clearStoredToken,
   setStoredToken,
   setStoredEmail,
   getStoredToken,
-  getStoredEmail,
 } from "../lib/services/auth";
 import { getUsers, type UserDto } from "../lib/services/user";
 import { ApiError } from "../interface/apiTypes";
@@ -78,6 +77,7 @@ interface AppContextValue {
     tutorEmail: string | null,
   ) => Promise<void>;
   assignCurrentUserAsTutor: (workshopId: string) => Promise<void>;
+  upsertWorkshopStudentsFromCsv: (workshopId: string, students: WorkshopStudent[]) => void;
   workshopStudents: Record<string, WorkshopStudent[]>;
   configWeeks: ConfigWeek[];
   setConfigWeeks: (weeks: ConfigWeek[]) => void;
@@ -155,6 +155,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [sessionMarks, setSessionMarks] = useState<SessionMarks>({});
   const [activeWorkshopId, setActiveWorkshopId] = useState<string | null>(null);
   const hasHydratedFromStorage = useRef(false);
+  const workshopStudentsRef = useRef(workshopStudents);
+  const importedWorkshopStudentsRef = useRef<Record<string, WorkshopStudent[]>>({});
+
+  useEffect(() => {
+    workshopStudentsRef.current = workshopStudents;
+  }, [workshopStudents]);
 
   const refreshWorkshops = useCallback(async () => {
     const [workshopDtos, users] = await Promise.all([getWorkshops(), getUsers()]);
@@ -163,12 +169,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const studentEntries = await Promise.all(
       activeWorkshops.map(async (workshop) => {
-        const students = await getWorkshopStudents(String(workshop.workshop_id));
+        let students: WorkshopStudentDto[];
+        try {
+          students = await getWorkshopStudents(String(workshop.workshop_id));
+        } catch {
+          const workshopId = String(workshop.workshop_id);
+          return [
+            workshopId,
+            importedWorkshopStudentsRef.current[workshopId] ?? workshopStudentsRef.current[workshopId] ?? [],
+          ] as const;
+        }
+        const workshopId = String(workshop.workshop_id);
+        const importedStudents = importedWorkshopStudentsRef.current[workshopId];
+        const activeStudents = students
+          .filter((student) => student.status === "active")
+          .map(mapWorkshopStudent);
         return [
-          String(workshop.workshop_id),
-          students
-            .filter((student) => student.status === "active")
-            .map(mapWorkshopStudent),
+          workshopId,
+          importedStudents ?? activeStudents,
         ] as const;
       }),
     );
@@ -259,29 +277,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Validate stored token on mount. If valid, sync session from the existing backend users endpoint.
   useEffect(() => {
     const token = getStoredToken();
-    const email = getStoredEmail();
-    if (!token || !email) {
+    if (!token) {
       clearStoredToken();
       setIsAuthLoading(false);
       return;
     }
-    getAuthenticatedUserByEmail(email)
+    getAuthenticatedUser()
       .then((user) => {
         setAuthRole(user.role);
         setCurrentUserId(user.id);
         setCurrentUserName(user.name);
         setCurrentUserEmail(user.email);
+        setStoredEmail(user.email);
         setViewRoleState(user.role);
         setIsAuthenticated(true);
         return Promise.all([refreshWorkshops(), refreshSystemConfig()]);
       })
-      .catch(() => {
-        clearStoredToken();
-        setIsAuthenticated(false);
-        setAuthRole(null);
-        setCurrentUserId("");
-        setCurrentUserName("");
-        setCurrentUserEmail("");
+      .catch((error) => {
+        if (error instanceof ApiError && error.status === 401) {
+          clearStoredToken();
+          setIsAuthenticated(false);
+          setAuthRole(null);
+          setCurrentUserId("");
+          setCurrentUserName("");
+          setCurrentUserEmail("");
+        }
       })
       .finally(() => {
         setIsAuthLoading(false);
@@ -312,20 +332,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
   async function loginWithCredentials(email: string, password: string): Promise<void> {
     const trimmedEmail = email.trim();
     const response = await loginApi({ email: trimmedEmail, password });
-    setStoredToken(response.access_token);
+    setStoredToken(response.access_token, response.expires_at);
     setStoredEmail(trimmedEmail);
 
     try {
-      const user = await getAuthenticatedUserByEmail(trimmedEmail);
+      const user = await getAuthenticatedUser();
       setAuthRole(user.role);
       setCurrentUserId(user.id);
       setCurrentUserName(user.name);
       setCurrentUserEmail(user.email);
+      setStoredEmail(user.email);
       setViewRoleState(user.role);
       setIsAuthenticated(true);
       await Promise.all([refreshWorkshops(), refreshSystemConfig()]);
     } catch (error) {
-      clearStoredToken();
+      if (error instanceof ApiError && error.status === 401) {
+        clearStoredToken();
+      }
       throw error;
     }
   }
@@ -424,6 +447,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       is_active: true,
     });
     await refreshWorkshops();
+  }
+
+  function upsertWorkshopStudentsFromCsv(workshopId: string, students: WorkshopStudent[]) {
+    importedWorkshopStudentsRef.current = {
+      ...importedWorkshopStudentsRef.current,
+      [workshopId]: students,
+    };
+    setWorkshopStudents((prev) => ({
+      ...prev,
+      [workshopId]: students,
+    }));
   }
 
   async function saveSystemConfig(options?: { weeks?: ConfigWeek[]; maxWeeklyScore?: number }) {
@@ -531,6 +565,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         logout,
         viewRole, setViewRole,
         workshops, setWorkshops, createWorkshop, deleteWorkshop, updateWorkshopTutor, assignCurrentUserAsTutor,
+        upsertWorkshopStudentsFromCsv,
         workshopStudents,
         configWeeks, setConfigWeeks,
         maxWeeklyScore,

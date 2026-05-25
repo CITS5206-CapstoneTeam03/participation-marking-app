@@ -53,6 +53,13 @@ export async function getUsers(): Promise<UserDto[]> {
     return users;
 }
 
+export function getCurrentUser(): Promise<UserDto> {
+    return apiRequest<UserDto>({
+        method: "GET",
+        url: "/me",
+    });
+}
+
 export function getUserById(userId: string): Promise<UserDto> {
     return apiRequest<UserDto>({
         method: "GET",

@@ -48,9 +48,9 @@ export function TutorDashboard() {
         if (!isCurrent) return;
         setMarksByWorkshopWeek(Object.fromEntries(entries));
       })
-      .catch(() => {
+      .catch((error) => {
         if (!isCurrent) return;
-        setMarksByWorkshopWeek({});
+        console.error("Unable to load tutor dashboard marks.", error);
       });
 
     return () => {

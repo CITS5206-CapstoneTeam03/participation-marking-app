@@ -1,9 +1,10 @@
 import { apiRequest } from "../axios-instance";
 import type { AuthTokenResponse, AuthUserDto, LoginInput } from "../../interface/apiTypes";
-import { getUserById, getUsers, type UserDto } from "./user";
+import { getCurrentUser, type UserDto } from "./user";
 
 export const AUTH_TOKEN_KEY = "pms-auth-token";
 const AUTH_EMAIL_KEY = "pms-auth-email";
+const AUTH_EXPIRES_AT_KEY = "pms-auth-expires-at";
 
 function toAuthUser(user: UserDto): AuthUserDto {
   return {
@@ -29,13 +30,8 @@ export function loginApi(payload: LoginInput): Promise<AuthTokenResponse> {
   });
 }
 
-export async function getAuthenticatedUserByEmail(email: string): Promise<AuthUserDto> {
-  const users = await getUsers();
-  const user = users.find((item) => item.email.toLowerCase() === email.toLowerCase());
-  if (!user) {
-    throw new Error("Authenticated user was not found in the user list.");
-  }
-  return toAuthUser(await getUserById(user.user_id));
+export async function getAuthenticatedUser(): Promise<AuthUserDto> {
+  return toAuthUser(await getCurrentUser());
 }
 
 export function getStoredEmail(): string | null {
@@ -45,11 +41,17 @@ export function getStoredEmail(): string | null {
 
 export function getStoredToken(): string | null {
   if (typeof window === "undefined") return null;
+  const expiresAt = localStorage.getItem(AUTH_EXPIRES_AT_KEY);
+  if (expiresAt && Date.now() >= Date.parse(expiresAt)) {
+    clearStoredToken();
+    return null;
+  }
   return localStorage.getItem(AUTH_TOKEN_KEY);
 }
 
-export function setStoredToken(token: string): void {
+export function setStoredToken(token: string, expiresAt: string): void {
   localStorage.setItem(AUTH_TOKEN_KEY, token);
+  localStorage.setItem(AUTH_EXPIRES_AT_KEY, expiresAt);
 }
 
 export function setStoredEmail(email: string): void {
@@ -59,4 +61,5 @@ export function setStoredEmail(email: string): void {
 export function clearStoredToken(): void {
   localStorage.removeItem(AUTH_TOKEN_KEY);
   localStorage.removeItem(AUTH_EMAIL_KEY);
+  localStorage.removeItem(AUTH_EXPIRES_AT_KEY);
 }

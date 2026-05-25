@@ -1,17 +1,17 @@
 import axios, { AxiosError, type AxiosRequestConfig } from "axios";
 import { ApiError } from "../interface/apiTypes";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ??
-  (process.env.NODE_ENV === "development" ? "http://127.0.0.1:8000/api" : "/api");
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "/api";
 const AUTH_TOKEN_KEY = "pms-auth-token";
 const AUTH_EMAIL_KEY = "pms-auth-email";
+const AUTH_EXPIRES_AT_KEY = "pms-auth-expires-at";
 
 function clearStoredAuth() {
   if (typeof window === "undefined") return;
 
   localStorage.removeItem(AUTH_TOKEN_KEY);
   localStorage.removeItem(AUTH_EMAIL_KEY);
+  localStorage.removeItem(AUTH_EXPIRES_AT_KEY);
 }
 
 function redirectToLogin() {
@@ -32,6 +32,15 @@ export const apiClient = axios.create({
 apiClient.interceptors.request.use((config) => {
   const token =
     typeof window !== "undefined" ? localStorage.getItem(AUTH_TOKEN_KEY) : null;
+  const expiresAt =
+    typeof window !== "undefined" ? localStorage.getItem(AUTH_EXPIRES_AT_KEY) : null;
+
+  if (expiresAt && Date.now() >= Date.parse(expiresAt)) {
+    clearStoredAuth();
+    redirectToLogin();
+    return Promise.reject(new ApiError("Your session has expired. Please log in again.", 401));
+  }
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

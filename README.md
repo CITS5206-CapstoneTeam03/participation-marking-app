@@ -16,6 +16,14 @@ npm install
 npm run dev
 ```
 
+Create a frontend `.env.local` when running the Next.js dev server directly:
+
+```env
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8000/api
+```
+
+When using the SWA CLI, `/api` is proxied automatically and this variable can be omitted.
+
 ### Backend
 
 #### Environment variables (`api/.env`)
