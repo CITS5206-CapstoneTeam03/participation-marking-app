@@ -34,22 +34,23 @@ class UserAdmin(ModelView, model=User):
 
     async def insert_model(self, request: Request, data: dict) -> Any:
         admin_id = request.session.get("token")
-        return crud_users.create_user(request.state.session, user_data=data, user_id=admin_id)
+        with SessionLocal() as db:
+            return crud_users.create_user(db, user_data=data, user_id=admin_id)
 
     async def update_model(self, request: Request, pk: str, data: dict) -> Any:
-        db = request.state.session
         admin_id = request.session.get("token")
-        model = db.query(self.model).get(pk)
-        if model:
-            return crud_users.update_user(db, db_user=model, update_data=data, user_id=admin_id)
-        return None
+        with SessionLocal() as db:
+            model = db.query(self.model).get(pk)
+            if model:
+                return crud_users.update_user(db, db_user=model, update_data=data, user_id=admin_id)
+            return None
 
     async def delete_model(self, request: Request, pk: Any) -> None:
-        db = request.state.session
         admin_id = request.session.get("token")
-        model = db.query(self.model).get(pk)
-        if model:
-            crud_users.delete_user(db, db_user=model, user_id=admin_id)
+        with SessionLocal() as db:
+            model = db.query(self.model).get(pk)
+            if model:
+                crud_users.delete_user(db, db_user=model, user_id=admin_id)
 
     # Exclude auto-managed fields from the create/edit form.
     # - created_at / updated_at: set by the DB server default and onupdate triggers
@@ -216,44 +217,46 @@ class StudentAdmin(ModelView, model=Student):
 
     async def insert_model(self, request: Request, data: dict) -> Any:
         admin_id = request.session.get("token")
-        return crud_students.create_student(request.state.session, student_data=data, user_id=admin_id)
+        with SessionLocal() as db:
+            return crud_students.create_student(db, student_data=data, user_id=admin_id)
 
     async def update_model(self, request: Request, pk: str, data: dict) -> Any:
-        db = request.state.session
         admin_id = request.session.get("token")
-        model = db.query(self.model).get(pk)
-        if model:
-            return crud_students.update_student(db, db_student=model, update_data=data, user_id=admin_id)
-        return None
+        with SessionLocal() as db:
+            model = db.query(self.model).get(pk)
+            if model:
+                return crud_students.update_student(db, db_student=model, update_data=data, user_id=admin_id)
+            return None
 
     async def delete_model(self, request: Request, pk: Any) -> None:
-        db = request.state.session
         admin_id = request.session.get("token")
-        model = db.query(self.model).get(pk)
-        if model:
-            crud_students.delete_student(db, db_student=model, user_id=admin_id)
+        with SessionLocal() as db:
+            model = db.query(self.model).get(pk)
+            if model:
+                crud_students.delete_student(db, db_student=model, user_id=admin_id)
 
 class WorkshopAdmin(ModelView, model=Workshop):
     icon = "fa-solid fa-chalkboard-user"
 
     async def insert_model(self, request: Request, data: dict) -> Any:
         admin_id = request.session.get("token")
-        return crud_workshops.create_workshop(request.state.session, workshop_data=data, user_id=admin_id)
+        with SessionLocal() as db:
+            return crud_workshops.create_workshop(db, workshop_data=data, user_id=admin_id)
 
     async def update_model(self, request: Request, pk: str, data: dict) -> Any:
-        db = request.state.session
         admin_id = request.session.get("token")
-        model = db.query(self.model).get(pk)
-        if model:
-            return crud_workshops.update_workshop(db, db_workshop=model, update_data=data, user_id=admin_id)
-        return None
+        with SessionLocal() as db:
+            model = db.query(self.model).get(pk)
+            if model:
+                return crud_workshops.update_workshop(db, db_workshop=model, update_data=data, user_id=admin_id)
+            return None
 
     async def delete_model(self, request: Request, pk: Any) -> None:
-        db = request.state.session
         admin_id = request.session.get("token")
-        model = db.query(self.model).get(pk)
-        if model:
-            crud_workshops.delete_workshop(db, db_workshop=model, user_id=admin_id)
+        with SessionLocal() as db:
+            model = db.query(self.model).get(pk)
+            if model:
+                crud_workshops.delete_workshop(db, db_workshop=model, user_id=admin_id)
 
 class EnabledWeekAdmin(ModelView, model=EnabledWeek):
     icon = "fa-solid fa-calendar-check"
@@ -274,22 +277,23 @@ class StudentWorkshopMembershipAdmin(ModelView, model=StudentWorkshopMembership)
 
     async def insert_model(self, request: Request, data: dict) -> Any:
         admin_id = request.session.get("token")
-        return crud_student_workshop_memberships.create_membership(request.state.session, membership_data=data, user_id=admin_id)
+        with SessionLocal() as db:
+            return crud_student_workshop_memberships.create_membership(db, membership_data=data, user_id=admin_id)
 
     async def update_model(self, request: Request, pk: str, data: dict) -> Any:
-        db = request.state.session
         admin_id = request.session.get("token")
-        model = db.query(self.model).get(pk)
-        if model:
-            return crud_student_workshop_memberships.update_membership(db, db_membership=model, update_data=data, user_id=admin_id)
-        return None
+        with SessionLocal() as db:
+            model = db.query(self.model).get(pk)
+            if model:
+                return crud_student_workshop_memberships.update_membership(db, db_membership=model, update_data=data, user_id=admin_id)
+            return None
 
     async def delete_model(self, request: Request, pk: Any) -> None:
-        db = request.state.session
         admin_id = request.session.get("token")
-        model = db.query(self.model).get(pk)
-        if model:
-            crud_student_workshop_memberships.delete_membership(db, db_membership=model, user_id=admin_id)
+        with SessionLocal() as db:
+            model = db.query(self.model).get(pk)
+            if model:
+                crud_student_workshop_memberships.delete_membership(db, db_membership=model, user_id=admin_id)
 
 class ParticipationMarkAdmin(ModelView, model=ParticipationMark):
     name = "Participation Mark"
