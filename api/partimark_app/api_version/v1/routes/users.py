@@ -9,16 +9,25 @@ from ....db.db import get_db #type:ignore
 from ....schemas.users import UserResponse, UserSelfUpdate #type:ignore
 from ....crud import crud_users as crud #type:ignore
 from ....core.deps import get_current_user #type:ignore
-from ....models.users import User #type:ignore
+from ....models.users import User, UserRole #type:ignore
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
 @router.get("/", response_model=List[UserResponse])
-def get_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def get_users(
+    skip: int = 0, 
+    limit: int = 100, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only Admins can view the full user list.",
+        )
     return crud.get_users(db, skip=skip, limit=limit)
-
 
 @router.get("/me", response_model=UserResponse, summary="Get your own profile")
 def get_own_profile(current_user: User = Depends(get_current_user)):

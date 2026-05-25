@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 from ....db.db import get_db #type:ignore
 from ....schemas.enabled_weeks import EnabledWeekCreate, EnabledWeekResponse #type:ignore
 from ....crud import crud_enabled_weeks as crud #type:ignore
+from ....core.deps import get_non_admin_user #type: ignore
+from ....models.users import User, UserRole #type: ignore
 
 router = APIRouter()
 
@@ -21,7 +23,11 @@ def get_enabled_weeks(db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=EnabledWeekResponse, status_code=status.HTTP_201_CREATED)
-def create_enabled_week(enabled_week_in: EnabledWeekCreate, db: Session = Depends(get_db)):
+def create_enabled_week(
+    enabled_week_in: EnabledWeekCreate, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_non_admin_user),
+):
     existing_week = crud.get_enabled_week(db, enabled_week_in.week_number)
     if existing_week:
         raise HTTPException(
@@ -29,8 +35,14 @@ def create_enabled_week(enabled_week_in: EnabledWeekCreate, db: Session = Depend
             detail="This week is already enabled.",
         )
 
+    if current_user.role != UserRole.UC:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only UC can enable week",
+        )
+    
     week_data = enabled_week_in.model_dump()
-    new_week = crud.create_enabled_week(db, week_data=week_data)
+    new_week = crud.create_enabled_week(db, week_data=week_data, user_id=current_user.user_id)
     return new_week
 
 
@@ -38,6 +50,7 @@ def create_enabled_week(enabled_week_in: EnabledWeekCreate, db: Session = Depend
 def replace_enabled_weeks(
     payload: ReplaceEnabledWeeksRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_non_admin_user),
 ):
     unique_weeks = sorted(set(payload.week_numbers))
 
@@ -48,11 +61,21 @@ def replace_enabled_weeks(
                 detail="week_numbers must be between 1 and 12.",
             )
 
-    return crud.replace_enabled_weeks(db, week_numbers=unique_weeks)
+    if current_user.role != UserRole.UC:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only UC can replace enabled weeks",
+        )
+
+    return crud.replace_enabled_weeks(db, week_numbers=unique_weeks, user_id=current_user.user_id)
 
 
 @router.delete("/{week_number}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_enabled_week(week_number: int, db: Session = Depends(get_db)):
+def delete_enabled_week(
+    week_number: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_non_admin_user),
+):
     db_enabled_week = crud.get_enabled_week(db, week_number=week_number)
     if not db_enabled_week:
         raise HTTPException(
@@ -60,5 +83,11 @@ def delete_enabled_week(week_number: int, db: Session = Depends(get_db)):
             detail="Enabled week not found.",
         )
 
-    crud.delete_enabled_week(db, db_enabled_week=db_enabled_week)
+    if current_user.role != UserRole.UC:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only UC can disable week",
+        )
+
+    crud.delete_enabled_week(db, db_enabled_week=db_enabled_week, user_id=current_user.user_id)
     return None

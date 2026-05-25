@@ -1,3 +1,4 @@
+import time
 from sqladmin.authentication import AuthenticationBackend
 from starlette.requests import Request
 
@@ -22,7 +23,10 @@ class AdminAuth(AuthenticationBackend):
                 return False
 
         # Session securely handled by SQLAdmin under the hood using secret_key
-        request.session.update({"token": user.user_id})
+        request.session.update({
+            "token": user.user_id,
+            "expires_at": time.time() + 3600
+        })
         return True
 
     async def logout(self, request: Request) -> bool:
@@ -31,7 +35,13 @@ class AdminAuth(AuthenticationBackend):
 
     async def authenticate(self, request: Request) -> bool:
         token = request.session.get("token")
-        if not token:
+        expires_at = request.session.get("expires_at")
+
+        if not token or not expires_at:
+            return False
+
+        if time.time() > expires_at:
+            request.session.clear()
             return False
 
         # Optionally check if user still exists/is admin

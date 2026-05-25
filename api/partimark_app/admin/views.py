@@ -16,6 +16,13 @@ from partimark_app.services.email.register import (
 )
 from partimark_app.crud.crud_users import set_reset_token, get_user_by_email, get_user
 from partimark_app.db.db import SessionLocal
+from typing import Any
+from partimark_app.crud import (
+    crud_users,
+    crud_students,
+    crud_workshops,
+    crud_student_workshop_memberships,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +31,26 @@ class UserAdmin(ModelView, model=User):
     # These are the columns from the User model that will be shown in the table
     column_list = [User.user_id, User.email, User.first_name, User.last_name, User.role, User.is_active]
     icon = "fa-solid fa-user"
+
+    async def insert_model(self, request: Request, data: dict) -> Any:
+        admin_id = request.session.get("token")
+        with SessionLocal() as db:
+            return crud_users.create_user(db, user_data=data, user_id=admin_id)
+
+    async def update_model(self, request: Request, pk: str, data: dict) -> Any:
+        admin_id = request.session.get("token")
+        with SessionLocal() as db:
+            model = db.get(self.model, pk)
+            if model:
+                return crud_users.update_user(db, db_user=model, update_data=data, user_id=admin_id)
+            return None
+
+    async def delete_model(self, request: Request, pk: Any) -> None:
+        admin_id = request.session.get("token")
+        with SessionLocal() as db:
+            model = db.get(self.model, pk)
+            if model:
+                crud_users.delete_user(db, db_user=model, user_id=admin_id)
 
     # Exclude auto-managed fields from the create/edit form.
     # - created_at / updated_at: set by the DB server default and onupdate triggers
@@ -188,19 +215,85 @@ class StudentAdmin(ModelView, model=Student):
     # If column_list is not specified, SQLAdmin automatically displays all columns
     icon = "fa-solid fa-graduation-cap"
 
+    async def insert_model(self, request: Request, data: dict) -> Any:
+        admin_id = request.session.get("token")
+        with SessionLocal() as db:
+            return crud_students.create_student(db, student_data=data, user_id=admin_id)
+
+    async def update_model(self, request: Request, pk: str, data: dict) -> Any:
+        admin_id = request.session.get("token")
+        with SessionLocal() as db:
+            model = db.get(self.model, pk)
+            if model:
+                return crud_students.update_student(db, db_student=model, update_data=data, user_id=admin_id)
+            return None
+
+    async def delete_model(self, request: Request, pk: Any) -> None:
+        admin_id = request.session.get("token")
+        with SessionLocal() as db:
+            model = db.get(self.model, pk)
+            if model:
+                crud_students.delete_student(db, db_student=model, user_id=admin_id)
+
 class WorkshopAdmin(ModelView, model=Workshop):
     icon = "fa-solid fa-chalkboard-user"
 
+    async def insert_model(self, request: Request, data: dict) -> Any:
+        admin_id = request.session.get("token")
+        with SessionLocal() as db:
+            return crud_workshops.create_workshop(db, workshop_data=data, user_id=admin_id)
+
+    async def update_model(self, request: Request, pk: str, data: dict) -> Any:
+        admin_id = request.session.get("token")
+        with SessionLocal() as db:
+            model = db.get(self.model, pk)
+            if model:
+                return crud_workshops.update_workshop(db, db_workshop=model, update_data=data, user_id=admin_id)
+            return None
+
+    async def delete_model(self, request: Request, pk: Any) -> None:
+        admin_id = request.session.get("token")
+        with SessionLocal() as db:
+            model = db.get(self.model, pk)
+            if model:
+                crud_workshops.delete_workshop(db, db_workshop=model, user_id=admin_id)
+
 class EnabledWeekAdmin(ModelView, model=EnabledWeek):
     icon = "fa-solid fa-calendar-check"
+    can_create = False
+    can_edit = False
+    can_delete = False
 
 class SystemConfigAdmin(ModelView, model=SystemConfig):
     icon = "fa-solid fa-gear"
+    can_create = False
+    can_edit = False
+    can_delete = False
 
 class StudentWorkshopMembershipAdmin(ModelView, model=StudentWorkshopMembership):
     name = "Workshop Membership"
     name_plural = "Workshop Memberships"
     icon = "fa-solid fa-users"
+
+    async def insert_model(self, request: Request, data: dict) -> Any:
+        admin_id = request.session.get("token")
+        with SessionLocal() as db:
+            return crud_student_workshop_memberships.create_membership(db, membership_data=data, user_id=admin_id)
+
+    async def update_model(self, request: Request, pk: str, data: dict) -> Any:
+        admin_id = request.session.get("token")
+        with SessionLocal() as db:
+            model = db.get(self.model, pk)
+            if model:
+                return crud_student_workshop_memberships.update_membership(db, db_membership=model, update_data=data, user_id=admin_id)
+            return None
+
+    async def delete_model(self, request: Request, pk: Any) -> None:
+        admin_id = request.session.get("token")
+        with SessionLocal() as db:
+            model = db.get(self.model, pk)
+            if model:
+                crud_student_workshop_memberships.delete_membership(db, db_membership=model, user_id=admin_id)
 
 class ParticipationMarkAdmin(ModelView, model=ParticipationMark):
     name = "Participation Mark"
@@ -214,6 +307,11 @@ class ParticipationMarkAdmin(ModelView, model=ParticipationMark):
 
 class AuditLogAdmin(ModelView, model=AuditLog):
     icon = "fa-solid fa-clipboard-list"
+
+    # Restrict permissions: Read-only access for admins
+    can_create = False
+    can_edit = False
+    can_delete = False
 
 # List of all views to easily add to admin in main.py
 all_admin_views = [

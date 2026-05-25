@@ -4,7 +4,14 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 
 from ..models.student_workshop_memberships import StudentWorkshopMembership
+from ..crud.crud_audit_logs import create_audit_log
+from ..schemas.audit_logs import AuditLogCreate
 
+actions = [
+    "create_membership",
+    "modify_membership",
+    "delete_membership"
+]
 
 def get_membership(db: Session, membership_id: int) -> Optional[StudentWorkshopMembership]:
     """Retrieve a student workshop membership by ID."""
@@ -76,9 +83,20 @@ def get_current_memberships_by_workshop(
 def create_membership(
     db: Session,
     membership_data: dict,
+    user_id: str = "LogicApp"
 ) -> StudentWorkshopMembership:
     """Create a new student workshop membership."""
     membership = StudentWorkshopMembership(**membership_data)
+
+    audit_in = AuditLogCreate(
+        user_id=user_id,
+        action_type=actions[0],
+        description=f"Created membership for student {membership.student_id} in workshop {membership.workshop_id}",
+        student_id=membership.student_id,
+        workshop_id=membership.workshop_id
+    )
+    create_audit_log(db, log_data=audit_in.model_dump())
+
     db.add(membership)
     db.commit()
     db.refresh(membership)
@@ -89,8 +107,18 @@ def update_membership(
     db: Session,
     db_membership: StudentWorkshopMembership,
     update_data: dict,
+    user_id: str = "ADMIN"
 ) -> StudentWorkshopMembership:
     """Update an existing student workshop membership."""
+    audit_in = AuditLogCreate(
+        user_id=user_id,
+        action_type=actions[1],
+        description=f"Modified membership for student {db_membership.student_id}",
+        student_id=db_membership.student_id,
+        workshop_id=db_membership.workshop_id
+    )
+    create_audit_log(db, log_data=audit_in.model_dump())
+
     for key, value in update_data.items():
         if value is not None:
             setattr(db_membership, key, value)
@@ -103,8 +131,18 @@ def close_current_membership(
     db: Session,
     db_membership: StudentWorkshopMembership,
     end_date: Optional[datetime] = None,
+    user_id: str = "ADMIN"
 ) -> StudentWorkshopMembership:
     """Mark the current membership as no longer current."""
+    audit_in = AuditLogCreate(
+        user_id=user_id,
+        action_type=actions[1],
+        description=f"Closed current membership for student {db_membership.student_id}",
+        student_id=db_membership.student_id,
+        workshop_id=db_membership.workshop_id
+    )
+    create_audit_log(db, log_data=audit_in.model_dump())
+
     db_membership.is_current = False
     db_membership.end_date = end_date or datetime.now(UTC)
     db.commit()
@@ -146,13 +184,31 @@ def move_student_to_workshop(
         created_by_user_id=created_by_user_id,
     )
 
+    audit_in = AuditLogCreate(
+        user_id=created_by_user_id or "ADMIN",
+        action_type=actions[0],
+        description=f"Moved student {student_id} to workshop {target_workshop_id}",
+        student_id=student_id,
+        workshop_id=target_workshop_id
+    )
+    create_audit_log(db, log_data=audit_in.model_dump())
+
     db.add(new_membership)
     db.commit()
     db.refresh(new_membership)
     return new_membership
 
 
-def delete_membership(db: Session, db_membership: StudentWorkshopMembership) -> None:
+def delete_membership(db: Session, db_membership: StudentWorkshopMembership, user_id: str = "ADMIN") -> None:
     """Delete a student workshop membership."""
+    audit_in = AuditLogCreate(
+        user_id=user_id,
+        action_type=actions[2],
+        description=f"Deleted membership for student {db_membership.student_id}",
+        student_id=db_membership.student_id,
+        workshop_id=db_membership.workshop_id
+    )
+    create_audit_log(db, log_data=audit_in.model_dump())
+
     db.delete(db_membership)
     db.commit()
