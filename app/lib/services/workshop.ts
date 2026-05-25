@@ -4,6 +4,8 @@ export type WorkshopDto = {
   workshop_id: number;
   workshop_name: string;
   tutor_user_id: string | null;
+  tutor_name: string | null;
+  tutor_email: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string | null;
@@ -24,6 +26,7 @@ export type WorkshopStudentDto = {
 export type CreateWorkshopInput = {
   workshop_name: string;
   tutor_user_id?: string | null;
+  tutor_email?: string | null;
   is_active?: boolean;
 };
 
@@ -57,6 +60,7 @@ export function createWorkshopApi(payload: CreateWorkshopInput): Promise<Worksho
     data: {
       workshop_name: payload.workshop_name,
       tutor_user_id: payload.tutor_user_id ?? null,
+      tutor_email: payload.tutor_email ?? null,
       is_active: payload.is_active ?? true,
     },
   });

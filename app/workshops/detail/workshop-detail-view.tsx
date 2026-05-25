@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import { CoordinatorShell } from "../../components/coordinator-shell";
 import { participationWeeks } from "../../data/mock-data";
 import { useAppContext, type Score, type WorkshopRecord } from "../../context/app-context";
-import { getUsers } from "../../lib/services/user";
 import { getWorkshopById, getWorkshopStudents } from "../../lib/services/workshop";
 
 export function WorkshopDetailView() {
@@ -39,17 +38,14 @@ export function WorkshopDetailView() {
 
     let isCurrent = true;
 
-    Promise.all([getWorkshopById(workshopId), getUsers()])
-      .then(([workshopDto, users]) => {
+    getWorkshopById(workshopId)
+      .then((workshopDto) => {
         if (!isCurrent) return;
-        const tutor = workshopDto.tutor_user_id
-          ? users.find((user) => user.user_id === workshopDto.tutor_user_id)
-          : null;
         setApiWorkshop({
           id: String(workshopDto.workshop_id),
           name: workshopDto.workshop_name,
-          tutorName: tutor?.display_name ?? null,
-          tutorEmail: tutor?.email ?? null,
+          tutorName: workshopDto.tutor_name ?? null,
+          tutorEmail: workshopDto.tutor_email ?? null,
         });
         setLoadedWorkshopId(workshopId);
       })

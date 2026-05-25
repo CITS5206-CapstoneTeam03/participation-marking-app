@@ -13,6 +13,28 @@ from ....crud import crud_users as crud_users #type:ignore
 router = APIRouter()
 
 
+_MISSING = object()
+
+
+def apply_tutor_email(db: Session, workshop_data: dict) -> None:
+    tutor_email = workshop_data.pop("tutor_email", _MISSING)
+    if tutor_email is _MISSING:
+        return
+
+    trimmed_email = tutor_email.strip() if tutor_email else ""
+    if not trimmed_email:
+        workshop_data["tutor_user_id"] = None
+        return
+
+    tutor = crud_users.get_user_by_email(db, trimmed_email)
+    if not tutor:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Assigned tutor email does not exist.",
+        )
+    workshop_data["tutor_user_id"] = tutor.user_id
+
+
 @router.post("/", response_model=WorkshopResponse, status_code=status.HTTP_201_CREATED)
 def create_workshop(workshop_in: WorkshopCreate, db: Session = Depends(get_db)):
     existing_workshop = crud_workshops.get_workshop_by_name(
@@ -25,6 +47,7 @@ def create_workshop(workshop_in: WorkshopCreate, db: Session = Depends(get_db)):
         )
 
     workshop_data = workshop_in.model_dump()
+    apply_tutor_email(db, workshop_data)
 
     if workshop_data.get("tutor_user_id"):
         tutor = crud_users.get_user(db, workshop_data["tutor_user_id"])
@@ -84,6 +107,7 @@ def update_workshop(
         )
 
     update_data = workshop_update.model_dump(exclude_unset=True)
+    apply_tutor_email(db, update_data)
 
     if "workshop_name" in update_data and update_data["workshop_name"] != workshop.workshop_name:
         existing_workshop = crud_workshops.get_workshop_by_name(

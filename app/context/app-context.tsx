@@ -10,7 +10,6 @@ import {
   setStoredEmail,
   getStoredToken,
 } from "../lib/services/auth";
-import { getUsers, type UserDto } from "../lib/services/user";
 import { ApiError } from "../interface/apiTypes";
 import {
   createWorkshopApi,
@@ -109,15 +108,12 @@ const defaultConfigWeeks: ConfigWeek[] = Array.from({ length: 12 }, (_, index) =
   };
 });
 
-function mapWorkshop(dto: WorkshopDto, users: UserDto[]): WorkshopRecord {
-  const tutor = dto.tutor_user_id
-    ? users.find((user) => user.user_id === dto.tutor_user_id)
-    : null;
+function mapWorkshop(dto: WorkshopDto): WorkshopRecord {
   return {
     id: String(dto.workshop_id),
     name: dto.workshop_name,
-    tutorName: tutor?.display_name ?? null,
-    tutorEmail: tutor?.email ?? null,
+    tutorName: dto.tutor_name ?? null,
+    tutorEmail: dto.tutor_email ?? null,
   };
 }
 
@@ -163,9 +159,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [workshopStudents]);
 
   const refreshWorkshops = useCallback(async () => {
-    const [workshopDtos, users] = await Promise.all([getWorkshops(), getUsers()]);
+    const workshopDtos = await getWorkshops();
     const activeWorkshops = workshopDtos.filter((workshop) => workshop.is_active);
-    setWorkshops(activeWorkshops.map((workshop) => mapWorkshop(workshop, users)));
+    setWorkshops(activeWorkshops.map(mapWorkshop));
 
     const studentEntries = await Promise.all(
       activeWorkshops.map(async (workshop) => {
@@ -236,17 +232,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       throw error;
     }
   }, []);
-
-  async function findTutorUserIdByEmail(email: string | null | undefined): Promise<string | null> {
-    const trimmed = email?.trim();
-    if (!trimmed) return null;
-    const users = await getUsers();
-    const tutor = users.find((user) => user.email.toLowerCase() === trimmed.toLowerCase());
-    if (!tutor) {
-      throw new Error("Tutor email does not match an existing user.");
-    }
-    return tutor.user_id;
-  }
 
   function applyPersistedState(saved: PersistedState) {
     if (saved.sessionMarks && typeof saved.sessionMarks === "object") {
@@ -373,10 +358,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!trimmed) return null;
     if (workshops.some((w) => w.name.toLowerCase() === trimmed.toLowerCase())) return null;
 
-    const tutorUserId = await findTutorUserIdByEmail(tutorEmail);
     const created = await createWorkshopApi({
       workshop_name: trimmed,
-      tutor_user_id: tutorUserId,
+      tutor_email: tutorEmail?.trim() || null,
       is_active: true,
     });
     await refreshWorkshops();
@@ -428,10 +412,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   ) {
     const workshop = workshops.find((item) => item.id === workshopId);
     if (!workshop) return;
-    const tutorUserId = await findTutorUserIdByEmail(tutorEmail);
     await updateWorkshopApi(workshopId, {
       workshop_name: workshop.name,
-      tutor_user_id: tutorUserId,
+      tutor_email: tutorEmail?.trim() || null,
       is_active: true,
     });
     await refreshWorkshops();

@@ -59,3 +59,11 @@ class Workshop(Base):
 
     def __repr__(self) -> str:
         return f"<Workshop {self.workshop_id} {self.workshop_name}>"
+
+    @property
+    def tutor_name(self) -> Optional[str]:
+        return self.tutor.display_name if self.tutor else None
+
+    @property
+    def tutor_email(self) -> Optional[str]:
+        return self.tutor.email if self.tutor else None
