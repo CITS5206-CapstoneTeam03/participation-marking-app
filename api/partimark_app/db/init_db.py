@@ -1,9 +1,12 @@
+import logging
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from partimark_app.core.config import settings
 from partimark_app.crud import crud_users
 from partimark_app.schemas.users import UserCreate
 from partimark_app.models.users import UserRole
+
+logger = logging.getLogger(__name__)
 
 def init_db(db: Session) -> None:
     """
@@ -29,9 +32,9 @@ def init_db(db: Session) -> None:
             
             try:
                 crud_users.create_user(db, user_data=user_data)
-                print(f"Admin user {settings.initial_admin_email} successfully bootstrapped.")
+                logger.info(f"Admin user {settings.initial_admin_email} successfully bootstrapped.")
             except IntegrityError:
                 db.rollback()
-                print(f"Admin user {settings.initial_admin_email} was created by another worker. Skipping.")
+                logger.warning(f"Admin user {settings.initial_admin_email} was created by another worker. Skipping.")
         else:
-            print(f"Admin user {settings.initial_admin_email} already exists. Skipping bootstrap.")
+            logger.info(f"Admin user {settings.initial_admin_email} already exists. Skipping bootstrap.")
