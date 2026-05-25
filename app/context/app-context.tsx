@@ -133,7 +133,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
       const saved = JSON.parse(raw) as PersistedState;
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       applyPersistedState(saved);
     } catch {
       // ignore read/parse issues and keep defaults

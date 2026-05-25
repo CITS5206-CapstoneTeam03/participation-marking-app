@@ -1,8 +1,8 @@
+import { configWeeks } from "../../data/mock-data";
 import { MarkingView } from "./marking-view";
 
 export async function generateStaticParams() {
-  // Providing a sample week ID for static export.
-  return [{ weekId: "week-1" }];
+  return configWeeks.map((w) => ({ weekId: w.id }));
 }
 
 export default function WeekMarkingPage() {
