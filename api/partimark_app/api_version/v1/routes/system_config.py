@@ -125,5 +125,6 @@ def update_current_system_config(
         db,
         db_config=db_config,
         update_data=update_data,
+        user_id=current_user.user_id,
     )
     return updated_config

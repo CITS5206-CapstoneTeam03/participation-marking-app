@@ -415,7 +415,11 @@ def update_mark(
 
 
 @router.delete("/{mark_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_mark(mark_id: int, db: Session = Depends(get_db)):
+def delete_mark(
+    mark_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_non_admin_user)
+):
     mark = crud_marks.get_mark(db, mark_id=mark_id)
     if not mark:
         raise HTTPException(
@@ -436,5 +440,5 @@ def delete_mark(mark_id: int, db: Session = Depends(get_db)):
             detail="Updating marks for Week 12 is currently locked.",
         )    
 
-    crud_marks.delete_mark(db, db_mark=mark)
+    crud_marks.delete_mark(db, db_mark=mark, user_id=current_user.user_id)
     return None

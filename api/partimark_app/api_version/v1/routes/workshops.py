@@ -9,6 +9,8 @@ from ....schemas.workshops import WorkshopCreate, WorkshopResponse, WorkshopUpda
 from ....crud import crud_student_workshop_memberships as crud_memberships #type:ignore
 from ....crud import crud_workshops as crud_workshops #type:ignore
 from ....crud import crud_users as crud_users #type:ignore
+from ....core.deps import get_current_user #type:ignore
+from ....models.users import User #type:ignore
 
 router = APIRouter()
 
@@ -36,7 +38,11 @@ def apply_tutor_email(db: Session, workshop_data: dict) -> None:
 
 
 @router.post("/", response_model=WorkshopResponse, status_code=status.HTTP_201_CREATED)
-def create_workshop(workshop_in: WorkshopCreate, db: Session = Depends(get_db)):
+def create_workshop(
+    workshop_in: WorkshopCreate, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     existing_workshop = crud_workshops.get_workshop_by_name(
         db, workshop_name=workshop_in.workshop_name
     )
@@ -57,7 +63,7 @@ def create_workshop(workshop_in: WorkshopCreate, db: Session = Depends(get_db)):
                 detail="Assigned tutor_user_id does not exist.",
             )
 
-    new_workshop = crud_workshops.create_workshop(db, workshop_data=workshop_data)
+    new_workshop = crud_workshops.create_workshop(db, workshop_data=workshop_data, user_id=current_user.user_id)
     return new_workshop
 
 
@@ -98,6 +104,7 @@ def update_workshop(
     workshop_id: int,
     workshop_update: WorkshopUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     workshop = crud_workshops.get_workshop(db, workshop_id=workshop_id)
     if not workshop:
@@ -128,13 +135,17 @@ def update_workshop(
             )
 
     updated_workshop = crud_workshops.update_workshop(
-        db, db_workshop=workshop, update_data=update_data
+        db, db_workshop=workshop, update_data=update_data, user_id=current_user.user_id
     )
     return updated_workshop
 
 
 @router.delete("/{workshop_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_workshop(workshop_id: int, db: Session = Depends(get_db)):
+def delete_workshop(
+    workshop_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     workshop = crud_workshops.get_workshop(db, workshop_id=workshop_id)
     if not workshop:
         raise HTTPException(
@@ -142,5 +153,5 @@ def delete_workshop(workshop_id: int, db: Session = Depends(get_db)):
             detail="Workshop not found.",
         )
 
-    crud_workshops.delete_workshop(db, db_workshop=workshop)
+    crud_workshops.delete_workshop(db, db_workshop=workshop, user_id=current_user.user_id)
     return None
