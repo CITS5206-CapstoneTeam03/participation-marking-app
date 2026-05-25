@@ -43,7 +43,7 @@ def create_enabled_week(db: Session, week_data: dict, user_id: str) -> EnabledWe
     db.add(enabled_week)
     db.commit()
     db.refresh(enabled_week)
-    _sync_system_config_points(db)
+    _sync_system_config_points(db,user_id)
     return enabled_week
 
 
@@ -65,7 +65,7 @@ def create_enabled_weeks_bulk(db: Session, weeks_data: List[dict], user_id: str)
     db.commit()
     for week in enabled_weeks:
         db.refresh(week)
-    _sync_system_config_points(db)
+    _sync_system_config_points(db, user_id)
     return enabled_weeks
 
 
@@ -93,7 +93,7 @@ def replace_enabled_weeks(db: Session, week_numbers: List[int], user_id: str) ->
     for week in enabled_weeks:
         db.refresh(week)
 
-    _sync_system_config_points(db)
+    _sync_system_config_points(db, user_id)
     return enabled_weeks
 
 
@@ -110,9 +110,9 @@ def delete_enabled_week(db: Session, db_enabled_week: EnabledWeek, user_id: str)
 
     db.delete(db_enabled_week)
     db.commit()
-    _sync_system_config_points(db)
+    _sync_system_config_points(db, user_id)
 
-def _sync_system_config_points(db: Session) -> None:
+def _sync_system_config_points(db: Session, user_id: str) -> None:
     from .crud_system_config import get_current_system_config, update_system_config
     
     config = get_current_system_config(db)
@@ -120,7 +120,7 @@ def _sync_system_config_points(db: Session) -> None:
         weeks = get_enabled_weeks(db)
         expected_points = len(weeks) * 3 if weeks else None
         if config.total_participation_points != expected_points:
-            update_system_config(db, config, {"total_participation_points": expected_points})
+            update_system_config(db, config, {"total_participation_points": expected_points}, user_id)
 
 def get_max_score(db: Session, week: int) -> int:
     """Calculate the maximum possible score up to a specific week."""

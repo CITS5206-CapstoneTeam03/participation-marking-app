@@ -45,7 +45,7 @@ def get_students_by_status(
     )
 
 
-def create_student(db: Session, student_data: dict, user_id: str) -> Student:
+def create_student(db: Session, student_data: dict, user_id: str = "LogicApp") -> Student:
     """Create a new student in the database."""
     new_student = Student(**student_data)
 

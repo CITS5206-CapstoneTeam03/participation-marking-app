@@ -47,7 +47,7 @@ def get_users_by_role(
 
 # TO DO: Remove the default user_id="UC" and require the authenticated user_id
 # once the public vs admin registration flow is finalized.
-def create_user(db: Session, user_data: dict, user_id: str = "UC") -> User:
+def create_user(db: Session, user_data: dict, user_id: str = "ADMIN") -> User:
     """Create a new user in the database."""
     new_user = User(**user_data)
 
@@ -65,7 +65,7 @@ def create_user(db: Session, user_data: dict, user_id: str = "UC") -> User:
 
 
 
-def update_user(db: Session, db_user: User, update_data: dict, user_id: str) -> User:
+def update_user(db: Session, db_user: User, update_data: dict, user_id: str = "ADMIN") -> User:
     """Update an existing user in the database."""
     audit_in = AuditLogCreate(
         user_id=user_id,
