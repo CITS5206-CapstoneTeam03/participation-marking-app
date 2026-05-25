@@ -40,7 +40,7 @@ class UserAdmin(ModelView, model=User):
     async def update_model(self, request: Request, pk: str, data: dict) -> Any:
         admin_id = request.session.get("token")
         with SessionLocal() as db:
-            model = db.query(self.model).get(pk)
+            model = db.get(self.model, pk)
             if model:
                 return crud_users.update_user(db, db_user=model, update_data=data, user_id=admin_id)
             return None
@@ -48,7 +48,7 @@ class UserAdmin(ModelView, model=User):
     async def delete_model(self, request: Request, pk: Any) -> None:
         admin_id = request.session.get("token")
         with SessionLocal() as db:
-            model = db.query(self.model).get(pk)
+            model = db.get(self.model, pk)
             if model:
                 crud_users.delete_user(db, db_user=model, user_id=admin_id)
 
@@ -223,7 +223,7 @@ class StudentAdmin(ModelView, model=Student):
     async def update_model(self, request: Request, pk: str, data: dict) -> Any:
         admin_id = request.session.get("token")
         with SessionLocal() as db:
-            model = db.query(self.model).get(pk)
+            model = db.get(self.model, pk)
             if model:
                 return crud_students.update_student(db, db_student=model, update_data=data, user_id=admin_id)
             return None
@@ -231,7 +231,7 @@ class StudentAdmin(ModelView, model=Student):
     async def delete_model(self, request: Request, pk: Any) -> None:
         admin_id = request.session.get("token")
         with SessionLocal() as db:
-            model = db.query(self.model).get(pk)
+            model = db.get(self.model, pk)
             if model:
                 crud_students.delete_student(db, db_student=model, user_id=admin_id)
 
@@ -246,7 +246,7 @@ class WorkshopAdmin(ModelView, model=Workshop):
     async def update_model(self, request: Request, pk: str, data: dict) -> Any:
         admin_id = request.session.get("token")
         with SessionLocal() as db:
-            model = db.query(self.model).get(pk)
+            model = db.get(self.model, pk)
             if model:
                 return crud_workshops.update_workshop(db, db_workshop=model, update_data=data, user_id=admin_id)
             return None
@@ -254,7 +254,7 @@ class WorkshopAdmin(ModelView, model=Workshop):
     async def delete_model(self, request: Request, pk: Any) -> None:
         admin_id = request.session.get("token")
         with SessionLocal() as db:
-            model = db.query(self.model).get(pk)
+            model = db.get(self.model, pk)
             if model:
                 crud_workshops.delete_workshop(db, db_workshop=model, user_id=admin_id)
 
@@ -283,7 +283,7 @@ class StudentWorkshopMembershipAdmin(ModelView, model=StudentWorkshopMembership)
     async def update_model(self, request: Request, pk: str, data: dict) -> Any:
         admin_id = request.session.get("token")
         with SessionLocal() as db:
-            model = db.query(self.model).get(pk)
+            model = db.get(self.model, pk)
             if model:
                 return crud_student_workshop_memberships.update_membership(db, db_membership=model, update_data=data, user_id=admin_id)
             return None
@@ -291,7 +291,7 @@ class StudentWorkshopMembershipAdmin(ModelView, model=StudentWorkshopMembership)
     async def delete_model(self, request: Request, pk: Any) -> None:
         admin_id = request.session.get("token")
         with SessionLocal() as db:
-            model = db.query(self.model).get(pk)
+            model = db.get(self.model, pk)
             if model:
                 crud_student_workshop_memberships.delete_membership(db, db_membership=model, user_id=admin_id)
 
