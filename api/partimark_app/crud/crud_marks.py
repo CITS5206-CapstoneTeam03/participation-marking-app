@@ -179,8 +179,6 @@ def update_mark(db: Session, db_mark: ParticipationMark, update_data: dict) -> P
         if key in ("mark_id",) or value is None:
             continue
         setattr(db_mark, key, value)
-    db.commit()
-    db.refresh(db_mark)
 
     audit_in = AuditLogCreate(
         user_id=update_data.get("marked_by_user_id"),
@@ -192,8 +190,10 @@ def update_mark(db: Session, db_mark: ParticipationMark, update_data: dict) -> P
         old_value=str(old_score),
         new_value=str(db_mark.score)
     )
-
     create_audit_log(db, log_data=audit_in.model_dump())
+
+    db.commit()
+    db.refresh(db_mark)
 
     return db_mark
 
@@ -242,10 +242,6 @@ def batch_update_marks(
             updated_marks.append(db_mark)
 
     if updated_marks and updates_data:
-        db.commit()
-        for mark in updated_marks:
-            db.refresh(mark)
-
         audit_in = AuditLogCreate(
             user_id=updates_data[0].get("marked_by_user_id"),
             action_type=actions[3],
@@ -253,8 +249,11 @@ def batch_update_marks(
             workshop_id=workshop_id,
             week_number=updates_data[0].get("week_number")
         )
-
         create_audit_log(db, log_data=audit_in.model_dump())
+
+        db.commit()
+        for mark in updated_marks:
+            db.refresh(mark)
 
     return updated_marks
 
