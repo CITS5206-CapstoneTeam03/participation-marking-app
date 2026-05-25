@@ -75,6 +75,8 @@ SWA CLI will create a local address (for example `http://localhost:4280`) where:
 - **Frontend** is served from the Next.js dev server.
 - **`/api` routes** are proxied to the FastAPI backend running at `http://localhost:8000`.
 
+The local FastAPI server is connected with `--api-devserver-url`, because it is an already-running API server rather than an Azure Functions project.
+
 ## Manually Running CI/CD (GitHub Actions)
 
 The website is configured for automated deployment, but automatic deployment on push may be temporarily disabled. You can manually trigger deployments for the Frontend and Backend using GitHub Actions:
