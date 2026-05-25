@@ -51,7 +51,6 @@ export function ReviewView() {
         <ReviewSession
           students={students}
           weekId={weekId}
-          weekLabel={week.label}
         />
       </div>
     </TutorShell>

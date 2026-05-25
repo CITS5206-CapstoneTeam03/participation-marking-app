@@ -13,7 +13,6 @@ from ....core.deps import get_current_user #type: ignore
 from ....models.users import User #type: ignore
 router = APIRouter()
 
-
 class MoveStudentRequest(BaseModel):
     target_workshop_id: int
     created_by_user_id: Optional[str] = Field(None, max_length=50)

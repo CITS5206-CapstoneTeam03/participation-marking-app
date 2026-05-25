@@ -7,6 +7,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    Float,
     String,
     UniqueConstraint,
     func,
@@ -50,7 +51,7 @@ class ParticipationMark(Base):
 
     week_number: Mapped[int] = mapped_column(
         Integer,
-        ForeignKey("enabled_weeks.week_number", ondelete="RESTRICT"),
+        ForeignKey("enabled_weeks.week_number", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )

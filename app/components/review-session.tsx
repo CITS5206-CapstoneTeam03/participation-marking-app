@@ -17,7 +17,6 @@ const SCORE_VALUES: Score[] = [0, 1, 2, 3];
 type ReviewSessionProps = {
   students: StudentMark[];
   weekId: string;
-  weekLabel: string;
 };
 
 /**
@@ -25,7 +24,7 @@ type ReviewSessionProps = {
  * current scores (from context). Allows inline score correction before
  * final submission.
  */
-export function ReviewSession({ students, weekId, weekLabel }: ReviewSessionProps) {
+export function ReviewSession({ students, weekId }: ReviewSessionProps) {
   const router = useRouter();
   const { sessionMarks, setMark } = useAppContext();
   const [showMilestone, setShowMilestone] = useState(false);

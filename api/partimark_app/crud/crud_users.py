@@ -110,3 +110,35 @@ def delete_user(db: Session, db_user: User, user_id: str) -> None:
 
     db.delete(db_user)
     db.commit()
+
+
+def get_user_by_reset_token_hash(db: Session, token_hash: str) -> Optional[User]:
+    """Look up a user by their stored password-reset token hash."""
+    return (
+        db.query(User)
+        .filter(User.password_reset_token_hash == token_hash)
+        .first()
+    )
+
+
+def set_reset_token(
+    db: Session,
+    db_user: User,
+    token_hash: str,
+    expires_at,
+) -> User:
+    """Persist the hashed reset token and its expiry on the user record."""
+    db_user.password_reset_token_hash = token_hash
+    db_user.password_reset_token_expires_at = expires_at
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+
+def clear_reset_token(db: Session, db_user: User) -> User:
+    """Invalidate the one-time token after it has been consumed."""
+    db_user.password_reset_token_hash = None
+    db_user.password_reset_token_expires_at = None
+    db.commit()
+    db.refresh(db_user)
+    return db_user

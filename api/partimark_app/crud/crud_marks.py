@@ -1,7 +1,10 @@
 from hashlib import new
-from typing import List, Optional
+from ..models.students import StudentStatus, Student
+from ..models.enabled_weeks import EnabledWeek
+from typing import List, Optional, Tuple
 
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from ..models.marks import ParticipationMark
 from ..crud.crud_audit_logs import create_audit_log
@@ -20,9 +23,52 @@ def get_mark(db: Session, mark_id: int) -> Optional[ParticipationMark]:
     return db.query(ParticipationMark).filter(ParticipationMark.mark_id == mark_id).first()
 
 
-def get_all_marks(db: Session) -> List[ParticipationMark]:
-    """Retrieve all participation marks."""
-    return db.query(ParticipationMark).all()
+def get_all_sum_marks(db: Session) -> List[Tuple[str, str, str, str, int]]:
+    """Retrieve student IDs, names, and their total aggregated marks."""
+    return (
+        db.query(
+            ParticipationMark.student_id,
+            Student.first_name,
+            Student.last_name,
+            Student.email,
+            func.sum(ParticipationMark.score).label("total")
+        )
+        .join(Student, ParticipationMark.student_id == Student.student_id)
+        .join(EnabledWeek, ParticipationMark.week_number == EnabledWeek.week_number)
+        .filter(Student.status == StudentStatus.ACTIVE)
+        .group_by(
+            ParticipationMark.student_id,
+            Student.first_name,
+            Student.last_name,
+            Student.email
+        )
+        .all()
+    )
+
+def get_all_6w_sum_marks(db: Session) -> List[Tuple[str, str, str, str, int]]:
+    """Retrieve student IDs, names, and their total aggregated marks."""
+    return (
+        db.query(
+            ParticipationMark.student_id,
+            Student.first_name,
+            Student.last_name,
+            Student.email,
+            func.sum(ParticipationMark.score).label("total")
+        )
+        .join(Student, ParticipationMark.student_id == Student.student_id)
+        .join(EnabledWeek, ParticipationMark.week_number == EnabledWeek.week_number)
+        .filter(
+            Student.status == StudentStatus.ACTIVE,
+            ParticipationMark.week_number <= 6
+        )
+        .group_by(
+            ParticipationMark.student_id,
+            Student.first_name,
+            Student.last_name,
+            Student.email
+        )
+        .all()
+    )
 
 
 def get_marks_by_student(db: Session, student_id: str) -> List[ParticipationMark]:

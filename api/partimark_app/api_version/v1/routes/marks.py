@@ -1,17 +1,21 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from ....db.db import get_db #type:ignore
-from ....schemas.marks import MarkCreate, MarkResponse, MarkUpdate, MarkBatchRequest, MarkBatchRequestItem #type:ignore
+from ....schemas.marks import MarkCreate, MarkResponse, MarkUpdate, MarkBatchRequest #type:ignore
 from ....crud import crud_marks as crud_marks #type:ignore
 from ....crud import crud_enabled_weeks as crud_enabled_weeks #type:ignore
 from ....crud import crud_system_config as crud_system_config #type:ignore
-from ....services import csv_export #type:ignore
+from ....crud import crud_student_workshop_memberships as crud_swm #type: ignore
 from ....core.deps import get_non_admin_user #type: ignore
 from ....models.users import User #type: ignore
+from ....models.students import StudentStatus #type: ignore
+from ....services.csv import csv_export, csv_import #type: ignore
+from ....crud import crud_students as crud_students #type: ignore
+from ....crud.csv_export import calculate_total_and_percent_mark, calculate_w6_total_and_percent_mark #type: ignore
 
 router = APIRouter()
 
@@ -40,6 +44,14 @@ def create_mark(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="This week is not enabled for participation marking.",
+        )
+
+    # Verify student belongs to workshop
+    memberships = crud_swm.get_current_memberships_by_student(db, mark_in.student_id)
+    if mark_in.workshop_id not in [m.workshop_id for m in memberships]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Student {mark_in.student_id} is not a member of workshop {mark_in.workshop_id}.",
         )
 
     existing_mark = crud_marks.get_mark_by_student_and_week(
@@ -103,6 +115,16 @@ def batch_create_workshop_marks(
             detail="Batch create must contain one mark per student.",
         )
 
+    # Verify students belong to workshop
+    workshop_memberships = crud_swm.get_current_memberships_by_workshop(db, workshop_id)
+    enrolled_student_ids = {m.student_id for m in workshop_memberships}
+    invalid_students = [sid for sid in student_ids if sid not in enrolled_student_ids]
+    if invalid_students:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"The following students are not members of workshop {workshop_id}: {', '.join(invalid_students)}.",
+        )
+
     #check if marks already exist for any of the students
     existing_marks = crud_marks.get_marks_by_workshop_and_week(db, workshop_id, week_number)
     existing_student_ids = {mark.student_id for mark in existing_marks}
@@ -163,12 +185,13 @@ def get_mark(mark_id: int, db: Session = Depends(get_db)):
     return mark
 
 
-@router.get("/export/semester")
-def export_semester_grades(
-    assessment_column_name: str,
+@router.post("/export/semester")
+async def export_semester_grades(
+    file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
-    marks = crud_marks.get_all_marks(db)
+    marks = calculate_total_and_percent_mark(db)
+    inactive_students = crud_students.get_students_by_status(db, StudentStatus.WITHDRAWN)
 
     if not marks:
         raise HTTPException(
@@ -176,13 +199,80 @@ def export_semester_grades(
             detail="No marks found to export.",
         )
 
-    csv_string = csv_export.generate_lms_export(
-        marks,
-        assessment_column_name=assessment_column_name,
-    )
+    try:
+        content = await file.read()
+        template_df = csv_import.parse_template_csv(content)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to process the uploaded template. Please ensure the file is a .csv, .xls, or .xlsx file. Error: {str(e)}",
+        )
+
+    try:
+        csv_string = csv_export.generate_lms_export(
+            template_df,
+            marks,
+            inactive_students,
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+
+    filename = file.filename
+    if filename.endswith(".xls"):
+        filename = filename[:-4] + ".csv"
+    elif filename.endswith(".xlsx"):
+        filename = filename[:-5] + ".csv"
 
     response = StreamingResponse(iter([csv_string]), media_type="text/csv")
-    response.headers["Content-Disposition"] = "attachment; filename=semester_export.csv"
+    response.headers["Content-Disposition"] = f"attachment; filename=populated_{filename}"
+    return response
+
+@router.post("/export/half_semester")
+async def export_half_semester_grades(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    marks = calculate_w6_total_and_percent_mark(db)
+    inactive_students = crud_students.get_students_by_status(db, StudentStatus.WITHDRAWN)
+
+    if not marks:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No marks found to export.",
+        )
+
+    try:
+        content = await file.read()
+        template_df = csv_import.parse_template_csv(content)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to process the uploaded template. Please ensure the file is a .csv, .xls, or .xlsx file. Error: {str(e)}",
+        )
+
+    try:
+        csv_string = csv_export.generate_lms_export(
+            template_df,
+            marks,
+            inactive_students,
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+
+    filename = file.filename
+    if filename.endswith(".xls"):
+        filename = filename[:-4] + ".csv"
+    elif filename.endswith(".xlsx"):
+        filename = filename[:-5] + ".csv"
+
+    response = StreamingResponse(iter([csv_string]), media_type="text/csv")
+    response.headers["Content-Disposition"] = f"attachment; filename=populated_{filename}"
     return response
 
 
@@ -214,6 +304,17 @@ def batch_update_workshop_marks(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="This week is not enabled for participation marking.",
+        )
+
+    # Verify students belong to workshop
+    workshop_memberships = crud_swm.get_current_memberships_by_workshop(db, workshop_id)
+    enrolled_student_ids = {m.student_id for m in workshop_memberships}
+    student_ids = [mark.student_id for mark in marks_in.marks]
+    invalid_students = [sid for sid in student_ids if sid not in enrolled_student_ids]
+    if invalid_students:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"The following students are not members of workshop {workshop_id}: {', '.join(invalid_students)}.",
         )
 
     existing_marks = crud_marks.get_marks_by_workshop_and_week(
@@ -298,6 +399,16 @@ def update_mark(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="This week is not enabled for participation marking.",
             )
+
+    # Verify target student belongs to target workshop
+    target_student_id = update_data.get("student_id", db_mark.student_id)
+    target_workshop_id = update_data.get("workshop_id", db_mark.workshop_id)
+    memberships = crud_swm.get_current_memberships_by_student(db, target_student_id)
+    if target_workshop_id not in [m.workshop_id for m in memberships]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Student {target_student_id} is not a member of workshop {target_workshop_id}.",
+        )
 
     updated_mark = crud_marks.update_mark(db, db_mark=db_mark, update_data=update_data)
     return updated_mark

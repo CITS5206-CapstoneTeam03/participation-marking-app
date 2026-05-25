@@ -78,7 +78,7 @@ def update_system_config(
     create_audit_log(db, log_data=audit_in.model_dump())
 
     for key, value in update_data.items():
-        if value is not None:
+        if value is not None or key in ["total_participation_points", "updated_by_user_id", "week6_locked_at", "week12_locked_at"]:
             setattr(db_config, key, value)
     db.commit()
     db.refresh(db_config)

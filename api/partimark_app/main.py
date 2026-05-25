@@ -1,12 +1,47 @@
 from fastapi import Depends, FastAPI, APIRouter, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from sqladmin import Admin
+from pathlib import Path
+from contextlib import asynccontextmanager
+import logging
 
-from partimark_app.db.db import get_db, engine
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+from partimark_app.db.init_db import init_db
+from partimark_app.db.db import get_db, engine, SessionLocal
 from partimark_app.models.users import User
 from partimark_app.admin.views import all_admin_views
 from partimark_app.api_version.v1.api import api_router
 from partimark_app.services.logic_app.logicApp import router as logic_router
+from partimark_app.admin.auth import authentication_backend
+from partimark_app.core.config import settings
+
+class PublicAdminUrlMiddleware:
+    def __init__(self, app, host: str, scheme: str) -> None:
+        self.app = app
+        self.host = host
+        self.scheme = scheme
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http" and scope.get("path", "").startswith("/api/admin"):
+            headers = [
+                (name, value)
+                for name, value in scope.get("headers", [])
+                if name.lower() != b"host"
+            ]
+            headers.append((b"host", self.host.encode("latin-1")))
+
+            scope = dict(scope)
+            scope["scheme"] = self.scheme
+            scope["server"] = (self.host, 443 if self.scheme == "https" else 80)
+            scope["headers"] = headers
+
+        await self.app(scope, receive, send)
+
+STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 # ==========================================
 # 1. Swagger UI Metadata Best Practices
@@ -28,6 +63,12 @@ tags_metadata = [
     },
 ]
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    with SessionLocal() as db:
+        init_db(db)
+    yield
+
 app = FastAPI(
     title="PartiMark Documentation",
     description=description,
@@ -37,15 +78,34 @@ app = FastAPI(
         "email": "admin@example.com",
     },
     openapi_tags=tags_metadata,
+    lifespan=lifespan,
+)
+
+app.add_middleware(
+    PublicAdminUrlMiddleware,
+    host=settings.public_app_host,
+    scheme=settings.public_app_scheme,
 )
 
 app.include_router(logic_router)
 
-# Configure the Admin interface
-admin = Admin(app, engine)
+# Serve the static folder (reset_password.html etc.)
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
-for view in all_admin_views:
-    admin.add_view(view)
+# Public route: email links point here → serves the set-password HTML page
+@app.get("/reset-password", include_in_schema=False)
+def reset_password_page():
+    return FileResponse(str(STATIC_DIR / "reset_password.html"))
+
+if settings.admin_url:
+    # Configure the Admin interface under /api so Azure Static Web Apps proxies it. to be served under admin_url
+    # This ensures Azure Static Web Apps automatically proxies traffic to it.
+    admin = Admin(app, engine, base_url=settings.admin_url, authentication_backend=authentication_backend)
+
+    for view in all_admin_views:
+        admin.add_view(view)
+else:
+    logger.warning("Admin URL is not set. Admin interface will not be available.")
 
 router = APIRouter(prefix="/api")
 

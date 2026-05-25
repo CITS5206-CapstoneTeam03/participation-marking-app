@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { CoordinatorShell } from "../components/coordinator-shell";
 import { useAppContext } from "../context/app-context";
 
@@ -9,7 +10,6 @@ export default function ConfigPage() {
     configWeeks: weeks,
     setConfigWeeks: setWeeks,
     maxWeeklyScore,
-    setMaxWeeklyScore,
     totalAssessmentWeighting,
     setTotalAssessmentWeighting,
   } = useAppContext();
@@ -151,20 +151,12 @@ export default function ConfigPage() {
               </div>
 
               <div className="config-field">
-                <label htmlFor="max-weekly-score" className="config-field-label">
-                  Max Weekly Score
-                </label>
+                <label htmlFor="max-weekly-score" className="config-field-label">Max Weekly Score</label>
                 <input
                   id="max-weekly-score"
                   type="number"
-                  min={1}
-                  max={3}
-                  value={maxWeeklyScore}
-                  onChange={(e) => {
-                    setSaved(false);
-                    const v = Number(e.target.value);
-                    if (!Number.isNaN(v) && v >= 1 && v <= 3) setMaxWeeklyScore(v);
-                  }}
+                  value={3}
+                  readOnly
                   className="config-field-input"
                 />
               </div>
@@ -286,8 +278,24 @@ export default function ConfigPage() {
         <div className="panel p-7">
           <p className="text-lg font-bold tracking-tight text-[var(--navy)]">Student Management</p>
           <p className="mt-2 text-sm text-[var(--ink-soft)]">
-            Student roster management coming in a future release.
+            Import and manage student rosters for each workshop.
           </p>
+          <Link
+            href="/students"
+            style={{
+              display: "inline-block",
+              marginTop: 16,
+              padding: "10px 20px",
+              borderRadius: 10,
+              background: "#3f5efb",
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: 14,
+              textDecoration: "none",
+            }}
+          >
+            Go to Student Management →
+          </Link>
         </div>
       )}
     </CoordinatorShell>

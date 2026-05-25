@@ -11,6 +11,7 @@ from ....crud import crud_system_config as crud  # type: ignore
 from ....crud import crud_users as crud_users  # type: ignore
 from ....core.deps import get_current_user # type: ignore
 from ....models.users import User, UserRole # type: ignore
+from ....crud import crud_enabled_weeks as week #type: ignore
 
 router = APIRouter()
 
@@ -23,6 +24,17 @@ def get_current_system_config(db: Session = Depends(get_db)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="System configuration not found.",
         )
+    
+    enabled_weeks = week.get_enabled_weeks(db)
+    total_points = len(enabled_weeks) * 3 if enabled_weeks else None
+    
+    if db_config.total_participation_points != total_points:
+        db_config = crud.update_system_config(
+            db, 
+            db_config=db_config, 
+            update_data={"total_participation_points": total_points}
+        )
+
     return db_config
 
 
@@ -61,7 +73,11 @@ def create_system_config(
             )
 
     config_data = config_in.model_dump()
-    new_config = crud.create_system_config(db, config_data=config_data, user_id=current_user.user_id)
+    
+    enabled_weeks = week.get_enabled_weeks(db)
+    config_data["total_participation_points"] = len(enabled_weeks) * 3 if enabled_weeks else None
+    
+    new_config = crud.create_system_config(db, config_data=config_data)
     return new_config
 
 
@@ -101,6 +117,9 @@ def update_current_system_config(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="updated_by_user_id does not exist.",
             )
+
+    enabled_weeks = week.get_enabled_weeks(db)
+    update_data["total_participation_points"] = len(enabled_weeks) * 3 if enabled_weeks else None
 
     updated_config = crud.update_system_config(
         db,
