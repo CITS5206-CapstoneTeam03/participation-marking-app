@@ -6,7 +6,7 @@ import { useAppContext } from "../context/app-context";
 import { getMarksByWorkshopAndWeek, type MarkDto } from "../lib/services/marks";
 
 export function CoordinatorDashboard() {
-  const { configWeeks, workshops, workshopStudents, currentUserName } = useAppContext();
+  const { configWeeks, workshops, workshopStudents, currentUserName, maxWeeklyScore } = useAppContext();
   const [marksByWorkshopWeek, setMarksByWorkshopWeek] = useState<Record<string, Record<number, MarkDto[]>>>({});
 
   const enabledWeeks = useMemo(
@@ -14,7 +14,6 @@ export function CoordinatorDashboard() {
     [configWeeks],
   );
   const isUnitConfigured = enabledWeeks.length > 0;
-  const activeWeek = enabledWeeks[enabledWeeks.length - 1] ?? null;
 
   useEffect(() => {
     if (workshops.length === 0 || enabledWeeks.length === 0) {
@@ -54,6 +53,13 @@ export function CoordinatorDashboard() {
     ? (allMarks.reduce((sum, mark) => sum + mark.score, 0) / allMarks.length).toFixed(2)
     : "0.00";
 
+  const activeWeek = [...enabledWeeks]
+    .sort((a, b) => b.weekNumber - a.weekNumber)
+    .find((week) =>
+      workshops.some((workshop) => (marksByWorkshopWeek[workshop.id]?.[week.weekNumber] ?? []).length > 0),
+    )
+    ?? enabledWeeks[enabledWeeks.length - 1]
+    ?? null;
   const markedThisWeek = activeWeek
     ? workshops.reduce((sum, workshop) => {
         const workshopStudentIds = new Set((workshopStudents[workshop.id] ?? []).map((student) => student.studentId));
@@ -62,16 +68,19 @@ export function CoordinatorDashboard() {
       }, 0)
     : 0;
 
-  const studentAverages = new Map<string, { total: number; count: number }>();
-  allMarks.forEach((mark) => {
-    const current = studentAverages.get(mark.student_id) ?? { total: 0, count: 0 };
-    current.total += mark.score;
-    current.count += 1;
-    studentAverages.set(mark.student_id, current);
+  const studentTotals = new Map<string, number>();
+  workshops.forEach((workshop) => {
+    (workshopStudents[workshop.id] ?? []).forEach((student) => {
+      studentTotals.set(student.studentId, 0);
+    });
   });
-  const atRiskCount = [...studentAverages.values()].filter(
-    (student) => student.count > 0 && student.total / student.count < 1.5,
-  ).length;
+  allMarks.forEach((mark) => {
+    studentTotals.set(mark.student_id, (studentTotals.get(mark.student_id) ?? 0) + mark.score);
+  });
+  const maxPossible = enabledWeeks.length * maxWeeklyScore;
+  const atRiskCount = maxPossible > 0
+    ? [...studentTotals.values()].filter((total) => total / maxPossible < 0.5).length
+    : 0;
 
   const totalStudents = workshops.reduce(
     (sum, workshop) => sum + (workshopStudents[workshop.id]?.length ?? 0),

@@ -256,7 +256,7 @@ export function WorkshopsView() {
                       </svg>
                       <span>Delete</span>
                     </button>
-                    <Link href={`/workshops/${workshop.id}`} className="workshop-view-btn">
+                    <Link href={`/workshops/detail?id=${workshop.id}`} className="workshop-view-btn">
                       View Details
                     </Link>
                   </div>
@@ -272,7 +272,7 @@ export function WorkshopsView() {
                     <p className="workshop-stat-value">{weeksCompleted} / {totalWeeks}</p>
                   </div>
                   <div>
-                    <p className="workshop-stat-label">Progress</p>
+                    <p className="workshop-stat-label">Marking Progress</p>
                     <p className="workshop-stat-value">{progress.toFixed(0)}%</p>
                   </div>
                   <div>

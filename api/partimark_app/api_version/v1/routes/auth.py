@@ -83,7 +83,13 @@ def login(
         role=user.role.value,  # e.g. "admin", "uc", "facilitator"
     )
 
-    return TokenResponse(access_token=access_token)
+    return TokenResponse(
+        access_token=access_token,
+        payload={
+            "user_id": user.user_id,
+            "user_role": user.role.value
+        }
+    )
 
 
 @router.post(
