@@ -97,8 +97,6 @@ def create_audit_log(db: Session, log_data: dict) -> AuditLog:
     """Create an audit log entry."""
     audit_log = AuditLog(**log_data)
     db.add(audit_log)
-    db.commit()
-    db.refresh(audit_log)
     return audit_log
 
 
