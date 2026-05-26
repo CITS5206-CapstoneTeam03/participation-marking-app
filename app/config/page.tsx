@@ -10,19 +10,48 @@ export default function ConfigPage() {
     configWeeks: weeks,
     setConfigWeeks: setWeeks,
     maxWeeklyScore,
+    totalParticipationPoints,
     totalAssessmentWeighting,
-    setTotalAssessmentWeighting,
+    saveSystemConfig,
+    saveEnabledWeeks,
   } = useAppContext();
 
-  const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"unit" | "students">("unit");
 
   const selectedWeeks = weeks.filter((w) => w.enabled);
-  const totalPoints = selectedWeeks.length * maxWeeklyScore;
+  const totalPoints = totalParticipationPoints;
+  const totalPointsLabel = totalPoints ?? "Not configured";
+  const gradeValuePerPoint =
+    totalPoints && totalPoints > 0
+      ? `${(totalAssessmentWeighting / totalPoints).toFixed(2)}%`
+      : "Not configured";
+
+  const markSaving = () => {
+    setSaveError(null);
+  };
+
+  const markSaved = () => {
+    setSaveError(null);
+  };
+
+  const markSaveFailed = () => {
+    setSaveError("Unable to save configuration.");
+  };
+
+  const persistWeeks = (nextWeeks: typeof weeks) => {
+    void saveEnabledWeeks(nextWeeks).then(markSaved).catch(markSaveFailed);
+  };
+
+  const persistSystemConfig = (options: Parameters<typeof saveSystemConfig>[0]) => {
+    void saveSystemConfig(options).then(markSaved).catch(markSaveFailed);
+  };
 
   const toggleWeek = (weekId: string) => {
-    setSaved(false);
-    setWeeks(weeks.map((w) => (w.id === weekId && !w.locked ? { ...w, enabled: !w.enabled } : w)));
+    markSaving();
+    const nextWeeks = weeks.map((w) => (w.id === weekId && !w.locked ? { ...w, enabled: !w.enabled } : w));
+    setWeeks(nextWeeks);
+    persistWeeks(nextWeeks);
   };
 
   const week6Ids = ["week-1", "week-2", "week-3", "week-4", "week-5", "week-6"];
@@ -35,23 +64,29 @@ export default function ConfigPage() {
   const week12AllLocked = week12Targets.length > 0 && week12Targets.every((w) => w.locked);
 
   const toggleWeek6Lock = () => {
-    setSaved(false);
+    markSaving();
+    let nextWeeks: typeof weeks;
     if (week6AllLocked) {
-      setWeeks(weeks.map((w) => (week6Ids.includes(w.id) ? { ...w, locked: false } : w)));
+      nextWeeks = weeks.map((w) => (week6Ids.includes(w.id) ? { ...w, locked: false } : w));
     } else {
       // Locking should never force week selection; preserve existing enabled states.
-      setWeeks(weeks.map((w) => (week6Ids.includes(w.id) ? { ...w, locked: true } : w)));
+      nextWeeks = weeks.map((w) => (week6Ids.includes(w.id) ? { ...w, locked: true } : w));
     }
+    setWeeks(nextWeeks);
+    persistSystemConfig({ weeks: nextWeeks });
   };
 
   const toggleWeek12Lock = () => {
-    setSaved(false);
+    markSaving();
+    let nextWeeks: typeof weeks;
     if (week12AllLocked) {
-      setWeeks(weeks.map((w) => (week12Ids.includes(w.id) ? { ...w, locked: false } : w)));
+      nextWeeks = weeks.map((w) => (week12Ids.includes(w.id) ? { ...w, locked: false } : w));
     } else {
       // Locking should never force week selection; preserve existing enabled states.
-      setWeeks(weeks.map((w) => (week12Ids.includes(w.id) ? { ...w, locked: true } : w)));
+      nextWeeks = weeks.map((w) => (week12Ids.includes(w.id) ? { ...w, locked: true } : w));
     }
+    setWeeks(nextWeeks);
+    persistSystemConfig({ weeks: nextWeeks });
   };
 
   return (
@@ -62,16 +97,7 @@ export default function ConfigPage() {
           <h1>Settings</h1>
           <p>Manage unit configuration and student management</p>
         </div>
-        <div className="flex flex-col items-end gap-1">
-          <button
-            type="button"
-            onClick={() => setSaved(true)}
-            className="rounded-full bg-[var(--navy)] px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-          >
-            Save configuration
-          </button>
-          <p className="text-xs text-[var(--ink-soft)]">Changes are auto-saved</p>
-        </div>
+        <p className="text-xs text-[var(--ink-soft)]">Changes are auto-saved</p>
       </div>
       <div className="config-tabs">
         <button
@@ -90,8 +116,8 @@ export default function ConfigPage() {
         </button>
       </div>
 
-      {saved && activeTab === "unit" && (
-        <div className="config-save-banner">Configuration saved successfully.</div>
+      {saveError && activeTab === "unit" && (
+        <div className="config-save-banner">{saveError}</div>
       )}
 
       {activeTab === "unit" && (
@@ -154,8 +180,8 @@ export default function ConfigPage() {
                 <label htmlFor="max-weekly-score" className="config-field-label">Max Weekly Score</label>
                 <input
                   id="max-weekly-score"
-                  type="number"
-                  value={3}
+                  type="text"
+                  value={maxWeeklyScore}
                   readOnly
                   className="config-field-input"
                 />
@@ -167,16 +193,9 @@ export default function ConfigPage() {
                 </label>
                 <input
                   id="total-weighting"
-                  type="number"
-                  min={0}
-                  max={100}
+                  type="text"
                   value={totalAssessmentWeighting}
-                  onChange={(e) => {
-                    setSaved(false);
-                    const v = Number(e.target.value);
-                    if (!Number.isNaN(v))
-                      setTotalAssessmentWeighting(Math.min(100, Math.max(0, v)));
-                  }}
+                  readOnly
                   className="config-field-input"
                 />
               </div>
@@ -187,13 +206,13 @@ export default function ConfigPage() {
                 </label>
                 <input
                   id="total-points"
-                  type="number"
-                  value={totalPoints}
+                  type="text"
+                  value={totalPointsLabel}
                   readOnly
                   className="config-field-input"
                 />
                 <p className="config-calc-hint">
-                  Auto-calculated: {selectedWeeks.length} weeks × {maxWeeklyScore} = {totalPoints}
+                  From backend configuration
                 </p>
               </div>
 
@@ -204,12 +223,12 @@ export default function ConfigPage() {
                 <input
                   id="per-point-value"
                   type="text"
-                  value={totalPoints > 0 ? `${(totalAssessmentWeighting / totalPoints).toFixed(2)}%` : "—"}
+                  value={gradeValuePerPoint}
                   readOnly
                   className="config-field-input"
                 />
                 <p className="config-calc-hint">
-                  Auto-calculated: {totalAssessmentWeighting}% ÷ {totalPoints} pts
+                  Based on backend participation points
                 </p>
               </div>
             </div>

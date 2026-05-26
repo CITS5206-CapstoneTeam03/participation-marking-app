@@ -27,7 +27,7 @@ export type LoginInput = {
 };
 
 export type AuthUserDto = {
-  id: number;
+  id: string;
   name: string;
   email: string;
   role: "coordinator" | "tutor";
@@ -36,5 +36,5 @@ export type AuthUserDto = {
 export type AuthTokenResponse = {
   access_token: string;
   token_type: string;
-  user: AuthUserDto;
+  expires_at: string;
 };

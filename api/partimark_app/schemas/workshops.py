@@ -19,7 +19,7 @@ class WorkshopBase(BaseModel):
 #
 class WorkshopCreate(WorkshopBase):
     """Properties needed to create a new workshop via API."""
-    pass
+    tutor_email: Optional[str] = Field(None, max_length=255)
 
 
 #
@@ -32,6 +32,7 @@ class WorkshopUpdate(BaseModel):
     """
     workshop_name: Optional[str] = Field(None, max_length=100)
     tutor_user_id: Optional[str] = Field(None, max_length=50)
+    tutor_email: Optional[str] = Field(None, max_length=255)
     is_active: Optional[bool] = None
 
 
@@ -52,7 +53,8 @@ class WorkshopInDBBase(WorkshopBase):
 #
 class WorkshopResponse(WorkshopInDBBase):
     """Schema used for API responses."""
-    pass
+    tutor_name: Optional[str] = None
+    tutor_email: Optional[str] = None
 
 
 #

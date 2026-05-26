@@ -3,14 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MarkingCard } from "./marking-card";
-import type { Score } from "../data/mock-data";
-import type { StudentMark } from "../data/mock-data";
-import { useAppContext } from "../context/app-context";
+import type { Score, StudentMark, StudentScoreMap } from "../lib/marking-types";
 
 type MarkingSessionProps = {
   students: StudentMark[];
   weekId: string;
   weekLabel: string;
+  scoresByStudent: StudentScoreMap;
+  onScoreSelect: (studentId: string, score: Score) => Promise<void>;
 };
 
 const AUTO_ADVANCE_DELAY_MS = 250;
@@ -24,20 +24,27 @@ const AUTO_ADVANCE_DELAY_MS = 250;
  *  - Auto-advance navigation (T-202 / FR-3.3) is handled in handleSelect
  *    without changing the card component.
  */
-export function MarkingSession({ students, weekId, weekLabel }: MarkingSessionProps) {
-  const { sessionMarks, setMark } = useAppContext();
+export function MarkingSession({
+  students,
+  weekId,
+  weekLabel,
+  scoresByStudent,
+  onScoreSelect,
+}: MarkingSessionProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [savingStudentId, setSavingStudentId] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const router = useRouter();
   const autoAdvanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isLastStudent = currentIndex === students.length - 1;
 
-  const weekMarks = sessionMarks[weekId] ?? {};
   const currentStudent = students[currentIndex];
   const currentScore: Score | null = currentStudent
-    ? ((weekMarks[currentStudent.id] ?? null) as Score | null)
+    ? (scoresByStudent[currentStudent.id] ?? null)
     : null;
-  const markedCount = Object.keys(weekMarks).length;
+  const studentIds = new Set(students.map((student) => student.id));
+  const markedCount = Object.keys(scoresByStudent).filter((studentId) => studentIds.has(studentId)).length;
   const progressPercent = students.length > 0 ? (markedCount / students.length) * 100 : 0;
 
   function clearAutoAdvanceTimeout() {
@@ -57,11 +64,22 @@ export function MarkingSession({ students, weekId, weekLabel }: MarkingSessionPr
   
   // ── Handlers ──────────────────────────────────────────────────────────────
 
-  function handleSelect(score: Score) {
+  async function handleSelect(score: Score) {
     if (!currentStudent) return;
   
-    setMark(weekId, currentStudent.id, score);
+    setSavingStudentId(currentStudent.id);
+    setSaveError(null);
     clearAutoAdvanceTimeout();
+
+    try {
+      await onScoreSelect(currentStudent.id, score);
+    } catch {
+      setSaveError("Unable to save this mark. Please try again.");
+      setSavingStudentId(null);
+      return;
+    }
+
+    setSavingStudentId(null);
   
     autoAdvanceTimeoutRef.current = setTimeout(() => {
       if (isLastStudent) {
@@ -126,6 +144,17 @@ export function MarkingSession({ students, weekId, weekLabel }: MarkingSessionPr
         score={currentScore}
         onSelect={handleSelect}
       />
+
+      {savingStudentId === currentStudent.id && (
+        <p className="review-warning" role="status">
+          Saving mark...
+        </p>
+      )}
+      {saveError && (
+        <p className="review-warning" role="alert">
+          {saveError}
+        </p>
+      )}
 
       <nav className="marking-nav" aria-label="Student navigation">
         <button

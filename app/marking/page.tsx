@@ -1,35 +1,64 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TutorShell } from "../components/tutor-shell";
-// TODO(T-API): replace participationWeeks with GET /weeks API response once backend is integrated
-import { participationWeeks } from "../data/mock-data";
 import { useAppContext } from "../context/app-context";
+import { getMarksByWorkshopAndWeek, type MarkDto } from "../lib/services/marks";
 
 export default function MarkingPage() {
   const router = useRouter();
-  const { configWeeks, workshops, workshopStudents, currentUserName, sessionMarks, setActiveWorkshopId } = useAppContext();
+  const {
+    configWeeks,
+    workshops,
+    workshopStudents,
+    currentUserName,
+    setActiveWorkshopId,
+  } = useAppContext();
+  const [selectedWorkshopId, setSelectedWorkshopId] = useState<string | null>(null);
+  const [marksByWeek, setMarksByWeek] = useState<Record<number, MarkDto[]>>({});
 
-  // Only show weeks the UC has enabled that also have a corresponding participationWeek entry
-  const enabledIds = new Set(configWeeks.filter((w) => w.enabled && !w.locked).map((w) => w.id));
   const assignedWorkshops = useMemo(
     () => workshops.filter((workshop) => workshop.tutorName && workshop.tutorName === currentUserName),
     [workshops, currentUserName],
   );
-  const [selectedWorkshopId, setSelectedWorkshopId] = useState<string | null>(null);
-
   const selectedWorkshop = assignedWorkshops.find((workshop) => workshop.id === selectedWorkshopId) ?? assignedWorkshops[0];
-
-  const visibleWeeks = selectedWorkshop
-    ? participationWeeks.filter((week) => enabledIds.has(week.id))
-    : [];
+  const visibleWeeks = useMemo(
+    () => selectedWorkshop ? configWeeks.filter((week) => week.enabled && !week.locked) : [],
+    [configWeeks, selectedWorkshop],
+  );
   const selectedWorkshopStudentCount = selectedWorkshop ? (workshopStudents[selectedWorkshop.id]?.length ?? 0) : 0;
   const selectedWorkshopStudentIds = useMemo(
     () => new Set((selectedWorkshop ? (workshopStudents[selectedWorkshop.id] ?? []) : []).map((student) => student.studentId)),
     [selectedWorkshop, workshopStudents],
   );
+
+  useEffect(() => {
+    if (!selectedWorkshop) {
+      return;
+    }
+
+    let isCurrent = true;
+    Promise.all(
+      visibleWeeks.map(async (week) => {
+        const marks = await getMarksByWorkshopAndWeek(selectedWorkshop.id, week.weekNumber);
+        return [week.weekNumber, marks] as const;
+      }),
+    )
+      .then((entries) => {
+        if (!isCurrent) return;
+        setMarksByWeek(Object.fromEntries(entries));
+      })
+      .catch((error) => {
+        if (!isCurrent) return;
+        console.error("Unable to load marking progress.", error);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [selectedWorkshop, visibleWeeks]);
 
   return (
     <TutorShell>
@@ -88,10 +117,8 @@ export default function MarkingPage() {
             </div>
           )}
 
-          {/* Panel header */}
           <div className="week-select-header">
             <div className="week-select-icon" aria-hidden="true">
-              {/* Calendar icon */}
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3f5efb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2" />
                 <line x1="16" y1="2" x2="16" y2="6" />
@@ -107,7 +134,6 @@ export default function MarkingPage() {
             </div>
           </div>
 
-          {/* Week grid */}
           {visibleWeeks.length === 0 ? (
             <p style={{ color: "var(--ink-soft)", padding: "24px 0" }}>
               No weeks have been enabled yet. Ask the Unit Coordinator to configure weeks in Settings.
@@ -116,8 +142,8 @@ export default function MarkingPage() {
             <div className="week-grid">
               {visibleWeeks.map((week) => {
                 const total = selectedWorkshopStudentCount;
-                const marked = Object.keys(sessionMarks[week.id] ?? {}).filter((sid) =>
-                  selectedWorkshopStudentIds.has(sid),
+                const marked = (marksByWeek[week.weekNumber] ?? []).filter((mark) =>
+                  selectedWorkshopStudentIds.has(mark.student_id),
                 ).length;
                 const isComplete = total > 0 && marked >= total;
 

@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "swa": "swa start http://localhost:3000 --api-location http://localhost:8000"
+    "swa": "swa start http://localhost:3000 --api-devserver-url http://localhost:8000"
   },
   "dependencies": {
     "next": "16.1.6",

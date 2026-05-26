@@ -11,7 +11,7 @@ The `username` field in that form carries the email address.
 """
 
 import hashlib
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -19,6 +19,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from ....core.security import create_access_token, verify_password #type: ignore
+from ....core.config import settings #type: ignore
 from ....crud import crud_users as crud #type: ignore
 from ....db.db import get_db #type: ignore
 from ....schemas.token import TokenResponse #type: ignore
@@ -78,13 +79,16 @@ def login(
         )
 
     # 4. Issue PASETO token
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
     access_token = create_access_token(
         subject=user.user_id,
         role=user.role.value,  # e.g. "admin", "uc", "facilitator"
+        expires_delta=timedelta(minutes=settings.access_token_expire_minutes),
     )
 
     return TokenResponse(
         access_token=access_token,
+        expires_at=expires_at.isoformat(),
         payload={
             "user_id": user.user_id,
             "user_role": user.role.value

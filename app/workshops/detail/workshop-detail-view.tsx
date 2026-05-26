@@ -2,16 +2,103 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { CoordinatorShell } from "../../components/coordinator-shell";
-import { useAppContext, type Score } from "../../context/app-context";
+import { participationWeeks } from "../../data/mock-data";
+import { useAppContext, type Score, type WorkshopRecord } from "../../context/app-context";
+import { getWorkshopById, getWorkshopStudents } from "../../lib/services/workshop";
 
 export function WorkshopDetailView() {
   const searchParams = useSearchParams();
   const workshopId = searchParams.get("id") ?? "";
 
   const { workshops, workshopStudents, sessionMarks, configWeeks, maxWeeklyScore } = useAppContext();
+  const [apiWorkshop, setApiWorkshop] = useState<WorkshopRecord | null>(null);
+  const [loadedWorkshopId, setLoadedWorkshopId] = useState<string | null>(null);
+  const [loadedStudentData, setLoadedStudentData] = useState<{
+    workshopId: string;
+    students: {
+      studentId: string;
+      firstName: string;
+      lastName: string;
+      preferredName?: string;
+      email: string;
+    }[];
+  } | null>(null);
 
-  const workshop = workshops.find((w) => w.id === workshopId);
+  const contextWorkshop = workshops.find((w) => w.id === workshopId) ?? null;
+  const loadedApiWorkshop = apiWorkshop?.id === workshopId ? apiWorkshop : null;
+  const workshop = contextWorkshop ?? loadedApiWorkshop;
+  const hasLoadedWorkshop = Boolean(contextWorkshop) || loadedWorkshopId === workshopId;
+
+  useEffect(() => {
+    if (!workshopId || contextWorkshop) {
+      return;
+    }
+
+    let isCurrent = true;
+
+    getWorkshopById(workshopId)
+      .then((workshopDto) => {
+        if (!isCurrent) return;
+        setApiWorkshop({
+          id: String(workshopDto.workshop_id),
+          name: workshopDto.workshop_name,
+          tutorName: workshopDto.tutor_name ?? null,
+          tutorEmail: workshopDto.tutor_email ?? null,
+        });
+        setLoadedWorkshopId(workshopId);
+      })
+      .catch(() => {
+        if (!isCurrent) return;
+        setApiWorkshop(null);
+        setLoadedWorkshopId(workshopId);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [contextWorkshop, workshopId]);
+
+  useEffect(() => {
+    if (!workshopId) {
+      return;
+    }
+
+    let isCurrent = true;
+
+    getWorkshopStudents(workshopId)
+      .then((studentDtos) => {
+        if (!isCurrent) return;
+        setLoadedStudentData({
+          workshopId,
+          students: studentDtos
+            .filter((student) => student.status === "active")
+            .map((student) => ({
+              studentId: student.student_id,
+              firstName: student.first_name,
+              lastName: student.last_name,
+              preferredName: student.preferred_name ?? undefined,
+              email: student.email,
+            })),
+        });
+      })
+      .catch(() => {
+        if (!isCurrent) return;
+        setLoadedStudentData({
+          workshopId,
+          students: [],
+        });
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [workshopId]);
+
+  if (!hasLoadedWorkshop) {
+    return null;
+  }
 
   if (!workshop) {
     return (
@@ -24,17 +111,24 @@ export function WorkshopDetailView() {
     );
   }
 
-  const enabledWeekIds = configWeeks.filter((w) => w.enabled).map((w) => w.id);
-  const students = workshopStudents[workshop.id] ?? [];
+  const enabledWeekIds = new Set(configWeeks.filter((w) => w.enabled).map((w) => w.id));
+  const workshopWeekIds = participationWeeks
+    .filter((week) => enabledWeekIds.has(week.id))
+    .map((week) => week.id);
+  const contextStudents = workshopStudents[workshop.id] ?? [];
+  const students = loadedStudentData?.workshopId === workshopId
+    ? loadedStudentData.students
+    : contextStudents;
+  const hasLoadedStudents = loadedStudentData?.workshopId === workshopId || contextStudents.length > 0;
 
   const totalStudents = students.length;
-  const weeksCompleted = enabledWeekIds.filter((weekId) =>
+  const weeksCompleted = workshopWeekIds.filter((weekId) =>
     students.length > 0 && students.every((s) => sessionMarks[weekId]?.[s.studentId] !== undefined),
   ).length;
-  const totalEnabledWeeks = enabledWeekIds.length;
+  const totalEnabledWeeks = workshopWeekIds.length;
 
   const allScores = students.flatMap((s) =>
-    enabledWeekIds
+    workshopWeekIds
       .map((weekId) => sessionMarks[weekId]?.[s.studentId])
       .filter((score): score is Score => score !== undefined),
   );
@@ -83,7 +177,9 @@ export function WorkshopDetailView() {
       <section className="real-page-panel">
         <article className="prototype-card dashboard-list-card">
           <h2 className="section-card-title">Students</h2>
-          {students.length === 0 ? (
+          {!hasLoadedStudents ? (
+            <p className="dashboard-empty">Loading students...</p>
+          ) : students.length === 0 ? (
             <p className="dashboard-empty">No students uploaded for this workshop yet.</p>
           ) : (
             <div className="review-table-wrapper">
@@ -100,7 +196,7 @@ export function WorkshopDetailView() {
                 </thead>
                 <tbody>
                   {students.map((student) => {
-                    const studentScores = enabledWeekIds
+                    const studentScores = workshopWeekIds
                       .map((weekId) => sessionMarks[weekId]?.[student.studentId])
                       .filter((score): score is Score => score !== undefined);
 

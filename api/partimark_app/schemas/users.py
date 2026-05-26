@@ -6,7 +6,6 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from ..models.users import UserRole
 
-
 #
 # 1. Base Schema
 #

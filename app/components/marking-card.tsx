@@ -1,6 +1,6 @@
 "use client";
 
-import type { StudentMark, Score } from "../data/mock-data";
+import type { Score, StudentMark } from "../lib/marking-types";
 
 export type { Score };
 
@@ -66,6 +66,20 @@ export function MarkingCard({ student, score, onSelect }: MarkingCardProps) {
 // ── Internal helpers ────────────────────────────────────────────────────────
 
 function StudentAvatar({ student }: { student: StudentMark }) {
+  if (!student.photoUrl) {
+    const initials = student.name
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join("");
+    return (
+      <div className="student-avatar-initials" aria-hidden="true">
+        {initials || "ST"}
+      </div>
+    );
+  }
+
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img

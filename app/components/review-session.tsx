@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { StudentMark, Score } from "../data/mock-data";
-import { useAppContext } from "../context/app-context";
+import type { Score, StudentMark, StudentScoreMap } from "../lib/marking-types";
 
 const SCORE_LABELS: Record<Score, string> = {
   0: "Absent",
@@ -17,32 +16,31 @@ const SCORE_VALUES: Score[] = [0, 1, 2, 3];
 type ReviewSessionProps = {
   students: StudentMark[];
   weekId: string;
+  weekLabel: string;
+  scoresByStudent: StudentScoreMap;
+  onScoreChange: (studentId: string, score: Score) => Promise<void>;
 };
 
-/**
- * Review & Submit table — shows all students for the week with their
- * current scores (from context). Allows inline score correction before
- * final submission.
- */
-export function ReviewSession({ students, weekId }: ReviewSessionProps) {
+export function ReviewSession({
+  students,
+  weekId,
+  scoresByStudent,
+  onScoreChange,
+}: ReviewSessionProps) {
   const router = useRouter();
-  const { sessionMarks, setMark } = useAppContext();
   const [showMilestone, setShowMilestone] = useState(false);
-
-  const weekMarks = sessionMarks[weekId] ?? {};
+  const [savingStudentId, setSavingStudentId] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const totalStudents = students.length;
-  const markedCount = students.filter((student) => weekMarks[student.id] !== undefined).length;
+  const markedCount = students.filter((student) => scoresByStudent[student.id] !== undefined).length;
   const unmarkedCount = totalStudents - markedCount;
   const canSubmit = unmarkedCount === 0;
-
-  // Sort students alphabetically by name (matches Figma)
   const sorted = [...students].sort((a, b) => a.name.localeCompare(b.name));
 
   function handleSubmit() {
     if (!canSubmit) return;
 
-    // Show Week 6 milestone popup before navigating away
     if (weekId === "week-6") {
       setShowMilestone(true);
       return;
@@ -56,9 +54,29 @@ export function ReviewSession({ students, weekId }: ReviewSessionProps) {
     router.push("/marking");
   }
 
+  async function handleScoreChange(studentId: string, score: Score) {
+    setSavingStudentId(studentId);
+    setSaveError(null);
+    try {
+      await onScoreChange(studentId, score);
+    } catch {
+      setSaveError("Unable to save this mark. Please try again.");
+    } finally {
+      setSavingStudentId(null);
+    }
+  }
+
+  function getInitials(name: string): string {
+    return name
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join("") || "ST";
+  }
+
   return (
     <>
-      {/* Week 6 milestone modal */}
       {showMilestone && (
         <div
           className="milestone-overlay"
@@ -88,7 +106,7 @@ export function ReviewSession({ students, weekId }: ReviewSessionProps) {
             </h2>
             <p className="milestone-modal-body">
               You have completed participation marking for the first half of semester.
-              The Unit Coordinator can now review and lock Weeks 1–6 in Settings.
+              The Unit Coordinator can now review and lock Weeks 1-6 in Settings.
             </p>
             <div className="milestone-modal-actions">
               <button
@@ -123,6 +141,11 @@ export function ReviewSession({ students, weekId }: ReviewSessionProps) {
           {unmarkedCount} student{unmarkedCount === 1 ? "" : "s"} still need a score before submission.
         </p>
       )}
+      {saveError && (
+        <p className="review-warning" role="alert">
+          {saveError}
+        </p>
+      )}
 
       <div className="review-table-wrapper">
         <table className="review-table">
@@ -138,18 +161,24 @@ export function ReviewSession({ students, weekId }: ReviewSessionProps) {
           </thead>
           <tbody>
             {sorted.map((student) => {
-              const isMarked = weekMarks[student.id] !== undefined;
-              const score = isMarked ? (weekMarks[student.id] as Score) : null;
+              const score = scoresByStudent[student.id] ?? null;
+              const isMarked = score !== null;
 
               return (
                 <tr key={student.id}>
                   <td>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={student.photoUrl}
-                      alt={student.name}
-                      className="review-photo"
-                    />
+                    {student.photoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={student.photoUrl}
+                        alt={student.name}
+                        className="review-photo"
+                      />
+                    ) : (
+                      <div className="review-photo review-photo-fallback" aria-hidden="true">
+                        {getInitials(student.name)}
+                      </div>
+                    )}
                   </td>
 
                   <td>
@@ -172,7 +201,8 @@ export function ReviewSession({ students, weekId }: ReviewSessionProps) {
                           type="button"
                           data-score={val}
                           className={`review-score-btn${score === val ? " selected" : ""}`}
-                          onClick={() => setMark(weekId, student.id, val)}
+                          onClick={() => handleScoreChange(student.id, val)}
+                          disabled={savingStudentId === student.id}
                           aria-pressed={score === val}
                           aria-label={`Score ${val}`}
                         >
@@ -184,13 +214,15 @@ export function ReviewSession({ students, weekId }: ReviewSessionProps) {
 
                   <td>
                     <span className="review-status">
-                      {isMarked ? SCORE_LABELS[score as Score] : "—"}
+                      {isMarked ? SCORE_LABELS[score as Score] : "-"}
                     </span>
                   </td>
 
                   <td>
                     {isMarked ? (
-                      <span className="review-marked">✓ Marked</span>
+                      <span className="review-marked">
+                        {savingStudentId === student.id ? "Saving..." : "Marked"}
+                      </span>
                     ) : (
                       <span className="review-unmarked">Not marked</span>
                     )}
