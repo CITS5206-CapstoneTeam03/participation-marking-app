@@ -48,3 +48,22 @@ export function updateMark(markId: number, payload: UpdateMarkInput): Promise<Ma
     data: payload,
   });
 }
+
+export function exportGradesApi(
+  isHalfSemester: boolean,
+  file: File,
+): Promise<Blob> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  return apiRequest<Blob>({
+    method: "POST",
+    url: isHalfSemester ? "/marks/export/half_semester" : "/marks/export/semester",
+    data: formData,
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+    responseType: "blob",
+  });
+}
+

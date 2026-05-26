@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CoordinatorShell } from "../components/coordinator-shell";
 import { TutorShell } from "../components/tutor-shell";
 import { useAppContext } from "../context/app-context";
-import { getMarksByWorkshopAndWeek, type MarkDto } from "../lib/services/marks";
+import { getMarksByWorkshopAndWeek, exportGradesApi, type MarkDto } from "../lib/services/marks";
 
 type AnalyticsRow = {
   studentId: string;
@@ -55,6 +55,13 @@ function AnalyticsContent() {
 
   const [selectedWorkshopId, setSelectedWorkshopId] = useState("all");
   const [marksByWorkshopWeek, setMarksByWorkshopWeek] = useState<Record<string, Record<number, MarkDto[]>>>({});
+
+  // State for CSV export backend upload modal
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportType, setExportType] = useState<"semester" | "half_semester">("semester");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const enabledWeeks = useMemo(() => {
     return configWeeks.filter((week) => week.enabled);
@@ -188,55 +195,65 @@ function AnalyticsContent() {
   const showWorkshopColumn = viewRole === "coordinator" || effectiveWorkshopId === "all";
   
   const handleExportCsv = () => {
-      const workshopLabel =
-      effectiveWorkshopId === "all"
-        ? "all-workshops"
-        : toFileSafeSegment(
-            visibleWorkshops.find((workshop) => workshop.id === effectiveWorkshopId)?.name ??
-              "selected-workshop",
-          );
+    setShowExportModal(true);
+    setSelectedFile(null);
+    setExportError(null);
+    setIsExporting(false);
+  };
 
-    const roleLabel = viewRole === "coordinator" ? "coordinator" : "tutor";
+  const handleConfirmExport = async () => {
+    if (!selectedFile) {
+      setExportError("Please select an LMS grade center template file.");
+      return;
+    }
+    setIsExporting(true);
+    setExportError(null);
 
-    const headers = [
-      "Student ID",
-      "Student Name",
-      ...(showWorkshopColumn ? ["Workshop"] : []),
-      "Email",
-      "Marks Recorded",
-      "Enabled Weeks",
-      "Avg Score",
-      "Grade (%)",
-      "Status",
-    ];
+    try {
+      const isHalfSemester = exportType === "half_semester";
+      const blob = await exportGradesApi(isHalfSemester, selectedFile);
 
-    const rows = filteredRows.map((row) => [
-      row.studentId,
-      row.studentName,
-      ...(showWorkshopColumn ? [row.workshopName] : []),
-      row.email,
-      row.marksRecorded,
-      enabledWeeks.length,
-      row.averageScore === null ? "" : row.averageScore.toFixed(2),
-      row.gradePercentage.toFixed(1),
-      row.isAtRisk ? "At Risk" : "On Track",
-    ]);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
 
-    const csvContent = [headers, ...rows]
-      .map((row) => row.map((cell) => escapeCsvValue(cell)).join(","))
-      .join("\n");
+      let downloadFilename = `populated_${selectedFile.name}`;
+      if (downloadFilename.endsWith(".xls")) {
+        downloadFilename = downloadFilename.slice(0, -4) + ".csv";
+      } else if (downloadFilename.endsWith(".xlsx")) {
+        downloadFilename = downloadFilename.slice(0, -5) + ".csv";
+      }
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
+      link.setAttribute("download", downloadFilename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
 
-    link.href = url;
-    link.setAttribute("download", `analytics-${roleLabel}-${workshopLabel}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    URL.revokeObjectURL(url);
+      // Close modal and reset
+      setShowExportModal(false);
+      setSelectedFile(null);
+    } catch (err: any) {
+      console.error("Export error:", err);
+      let msg = "Export failed. Please ensure the template file is valid and matches Blackboard structure.";
+      
+      if (err.response && err.response.data instanceof Blob) {
+        try {
+          const text = await err.response.data.text();
+          const parsed = JSON.parse(text);
+          if (parsed && parsed.detail) {
+            msg = parsed.detail;
+          }
+        } catch (e) {
+          // Fallback to reading text directly if it is not JSON
+        }
+      } else if (err.message) {
+        msg = err.message;
+      }
+      setExportError(msg);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const metricGridClassName =
@@ -572,6 +589,184 @@ function AnalyticsContent() {
           )}
         </article>
       </section>
+
+      {showExportModal && (
+        <div
+          className="milestone-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="export-title"
+          onClick={() => !isExporting && setShowExportModal(false)}
+        >
+          <div
+            className="milestone-modal"
+            style={{ maxWidth: "500px" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="milestone-modal-icon"
+              style={{ background: "rgba(79, 70, 229, 0.12)" }}
+            >
+              <svg
+                width="26"
+                height="26"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#4f46e5"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+            </div>
+            <h2 className="milestone-modal-title" id="export-title">
+              Populate LMS Grade Template
+            </h2>
+            <p className="milestone-modal-body" style={{ marginBottom: "18px" }}>
+              Upload your Blackboard Grade Center spreadsheet (.csv, .xls, .xlsx) to automatically fill in the participation marks.
+            </p>
+
+            <div style={{ marginBottom: "20px" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  color: "#56657c",
+                  marginBottom: "8px",
+                }}
+              >
+                Export Scope
+              </label>
+              <div style={{ display: "flex", gap: "12px" }}>
+                <button
+                  type="button"
+                  onClick={() => setExportType("semester")}
+                  style={{
+                    flex: 1,
+                    padding: "10px 14px",
+                    borderRadius: "10px",
+                    border: exportType === "semester" ? "2px solid #4f46e5" : "1.5px solid #d7dfeb",
+                    background: exportType === "semester" ? "#f5f3ff" : "#ffffff",
+                    color: exportType === "semester" ? "#4f46e5" : "#172033",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Full Semester
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setExportType("half_semester")}
+                  style={{
+                    flex: 1,
+                    padding: "10px 14px",
+                    borderRadius: "10px",
+                    border: exportType === "half_semester" ? "2px solid #4f46e5" : "1.5px solid #d7dfeb",
+                    background: exportType === "half_semester" ? "#f5f3ff" : "#ffffff",
+                    color: exportType === "half_semester" ? "#4f46e5" : "#172033",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Half Semester (W1-W6)
+                </button>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: "22px" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  color: "#56657c",
+                  marginBottom: "8px",
+                }}
+              >
+                Blackboard Template File
+              </label>
+              <div
+                style={{
+                  border: "2px dashed #cfd8e8",
+                  borderRadius: "12px",
+                  padding: "20px",
+                  textAlign: "center",
+                  background: "#f8fafc",
+                  cursor: "pointer",
+                  position: "relative",
+                }}
+                onClick={() => document.getElementById("template-file-input")?.click()}
+              >
+                <input
+                  id="template-file-input"
+                  type="file"
+                  accept=".csv,.xls,.xlsx"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) setSelectedFile(file);
+                  }}
+                  style={{ display: "none" }}
+                />
+                <p style={{ margin: 0, fontSize: "14px", color: selectedFile ? "#172033" : "#6b7a90", fontWeight: selectedFile ? 600 : 500 }}>
+                  {selectedFile ? selectedFile.name : "Click to browse grade template"}
+                </p>
+                <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#6b7a90" }}>
+                  Supports .csv, .xls, .xlsx
+                </p>
+              </div>
+            </div>
+
+            {exportError && (
+              <p style={{ color: "#dc2626", fontSize: "14px", fontWeight: 600, margin: "0 0 16px" }}>
+                {exportError}
+              </p>
+            )}
+
+            <div className="milestone-modal-actions">
+              <button
+                type="button"
+                className="milestone-modal-btn-primary"
+                onClick={handleConfirmExport}
+                disabled={isExporting || !selectedFile}
+                style={{
+                  background: isExporting || !selectedFile ? "#94a3b8" : "#4f46e5",
+                  cursor: isExporting || !selectedFile ? "not-allowed" : "pointer",
+                }}
+              >
+                {isExporting ? "Processing..." : "Export & Download"}
+              </button>
+              <button
+                type="button"
+                className="workshop-modal-cancel-btn"
+                onClick={() => setShowExportModal(false)}
+                disabled={isExporting}
+                style={{
+                  padding: "12px 20px",
+                  borderRadius: "12px",
+                  border: "1.5px solid #d7dfeb",
+                  background: "#ffffff",
+                  color: "#56657c",
+                  font: "inherit",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
