@@ -58,7 +58,14 @@ type TutorShellProps = {
 export function TutorShell({ children }: TutorShellProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthLoading, isAuthenticated, authRole, currentUserName, logout, setViewRole } = useAppContext();
+  const {
+    isAuthLoading,
+    isAuthenticated,
+    authRole,
+    currentUserName,
+    logout,
+    setViewRole,
+  } = useAppContext();
 
   useEffect(() => {
     if (isAuthLoading) return;
@@ -135,8 +142,8 @@ export function TutorShell({ children }: TutorShellProps) {
             </>
           )}
           <div className="mt-4">
-            <p className="text-[15px] font-semibold text-[#172033]">{currentUserName || "Tutor"}</p>
-            <p className="text-sm text-[#708097]">Tutor</p>
+            <p className="text-[15px] font-semibold text-[#172033]">{currentUserName}</p>
+            <p className="text-sm text-[#708097]">{authRole === "coordinator" ? "Coordinator" : "Tutor"}</p>
           </div>
           <button type="button" className="tutor-signout-btn" onClick={handleSignOut}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">

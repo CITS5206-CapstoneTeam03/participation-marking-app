@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ChangeEvent } from "react";
+import { type ChangeEvent, useMemo, useState } from "react";
 import Link from "next/link";
 import { read, utils } from "xlsx";
 import { useAppContext, type WorkshopStudent } from "../context/app-context";
@@ -47,13 +47,12 @@ export function WorkshopsView() {
   } = useAppContext();
 
   const [newWorkshopName, setNewWorkshopName] = useState("");
-  const [newWorkshopTutorName, setNewWorkshopTutorName] = useState("");
   const [newWorkshopTutorEmail, setNewWorkshopTutorEmail] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingWorkshopId, setEditingWorkshopId] = useState<string | null>(null);
-  const [editingTutorName, setEditingTutorName] = useState("");
   const [editingTutorEmail, setEditingTutorEmail] = useState("");
   const [confirmDeleteWorkshopId, setConfirmDeleteWorkshopId] = useState<string | null>(null);
+  const [workshopError, setWorkshopError] = useState<string | null>(null);
 
   const enabledWeekIds = useMemo(
     () => new Set(configWeeks.filter((week) => week.enabled).map((week) => week.id)),
@@ -100,39 +99,37 @@ export function WorkshopsView() {
     });
   }, [workshops, workshopStudents, sessionMarks, enabledWeekIds]);
 
-  const onCreateWorkshop = () => {
+  const onCreateWorkshop = async () => {
     if (!newWorkshopName.trim()) return;
-    createWorkshop(newWorkshopName, newWorkshopTutorName, newWorkshopTutorEmail);
-
-    // TODO: trigger backend email invitation flow when creating a workshop with tutor email.
-    // sendTutorInvitationEmail({ workshopName: newWorkshopName, tutorName: newWorkshopTutorName, tutorEmail: newWorkshopTutorEmail });
-
-    setNewWorkshopName("");
-    setNewWorkshopTutorName("");
-    setNewWorkshopTutorEmail("");
-    setShowCreateModal(false);
+    setWorkshopError(null);
+    try {
+      await createWorkshop(newWorkshopName, null, newWorkshopTutorEmail);
+      setNewWorkshopName("");
+      setNewWorkshopTutorEmail("");
+      setShowCreateModal(false);
+    } catch {
+      setWorkshopError("Unable to create workshop. Check the workshop name and tutor email.");
+    }
   };
 
-  const onStartEditTutor = (workshopId: string, tutorName: string | null, tutorEmail: string | null) => {
+  const onStartEditTutor = (workshopId: string, tutorEmail: string | null) => {
     setEditingWorkshopId(workshopId);
-    setEditingTutorName(tutorName ?? "");
     setEditingTutorEmail(tutorEmail ?? "");
   };
 
-  const onSaveTutor = (workshopId: string) => {
-    updateWorkshopTutor(workshopId, editingTutorName || null, editingTutorEmail || null);
-
-    // TODO: trigger backend email invitation flow when tutor email is assigned/changed.
-    // sendTutorInvitationEmail({ workshopId, tutorName: editingTutorName, tutorEmail: editingTutorEmail });
-
-    setEditingWorkshopId(null);
-    setEditingTutorName("");
-    setEditingTutorEmail("");
+  const onSaveTutor = async (workshopId: string) => {
+    setWorkshopError(null);
+    try {
+      await updateWorkshopTutor(workshopId, null, editingTutorEmail || null);
+      setEditingWorkshopId(null);
+      setEditingTutorEmail("");
+    } catch {
+      setWorkshopError("Unable to update workshop tutor. Use an existing tutor email.");
+    }
   };
 
   const onCancelTutorEdit = () => {
     setEditingWorkshopId(null);
-    setEditingTutorName("");
     setEditingTutorEmail("");
   };
 
@@ -141,27 +138,36 @@ export function WorkshopsView() {
     if (!file) return;
     event.target.value = "";
 
-    const isSpreadsheet = /\.(xlsx|xls)$/i.test(file.name);
-    let students: WorkshopStudent[];
+    try {
+      const isSpreadsheet = /\.(xlsx|xls)$/i.test(file.name);
+      let students: WorkshopStudent[];
 
-    if (isSpreadsheet) {
-      const buffer = await file.arrayBuffer();
-      const wb = read(buffer);
-      const sheet = wb.Sheets[wb.SheetNames[0]];
-      if (!sheet) return;
-      students = parseStudentsCsv(utils.sheet_to_csv(sheet));
-    } else {
-      students = parseStudentsCsv(await file.text());
+      if (isSpreadsheet) {
+        const buffer = await file.arrayBuffer();
+        const wb = read(buffer);
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        if (!sheet) return;
+        students = parseStudentsCsv(utils.sheet_to_csv(sheet));
+      } else {
+        students = parseStudentsCsv(await file.text());
+      }
+
+      upsertWorkshopStudentsFromCsv(workshopId, students);
+      setWorkshopError(null);
+    } catch {
+      setWorkshopError("Unable to import students. Check the CSV or Excel file format.");
     }
-
-    // We intentionally replace to keep source-of-truth aligned with latest upload.
-    upsertWorkshopStudentsFromCsv(workshopId, students);
   };
 
-  const onConfirmDeleteWorkshop = () => {
+  const onConfirmDeleteWorkshop = async () => {
     if (!confirmDeleteWorkshopId) return;
-    deleteWorkshop(confirmDeleteWorkshopId);
-    setConfirmDeleteWorkshopId(null);
+    setWorkshopError(null);
+    try {
+      await deleteWorkshop(confirmDeleteWorkshopId);
+      setConfirmDeleteWorkshopId(null);
+    } catch {
+      setWorkshopError("Unable to delete workshop.");
+    }
   };
 
   return (
@@ -210,11 +216,17 @@ export function WorkshopsView() {
         </div>
       </header>
 
+      {workshopError && (
+        <section className="real-page-panel">
+          <p className="dashboard-empty">{workshopError}</p>
+        </section>
+      )}
+
       <section className="real-page-panel workshops-list">
         {workshopStats.length === 0 ? (
           <article className="prototype-card workshop-empty-card">
             <h2 className="section-card-title">No workshops configured</h2>
-            <p className="dashboard-empty">Create a workshop to start assigning tutors and uploading students.</p>
+            <p className="dashboard-empty">Create a workshop to start assigning tutors and viewing student memberships.</p>
           </article>
         ) : (
           workshopStats.map(({ workshop, studentCount, weeksCompleted, totalWeeks, progress, avgScore }) => {
@@ -229,12 +241,6 @@ export function WorkshopsView() {
 
                     {isEditing ? (
                       <div className="workshop-tutor-edit-row">
-                        <input
-                          value={editingTutorName}
-                          onChange={(e) => setEditingTutorName(e.target.value)}
-                          placeholder="Tutor name"
-                          className="workshop-input"
-                        />
                         <input
                           value={editingTutorEmail}
                           onChange={(e) => setEditingTutorEmail(e.target.value)}
@@ -254,7 +260,7 @@ export function WorkshopsView() {
                         <button
                           type="button"
                           className="workshop-text-btn"
-                          onClick={() => onStartEditTutor(workshop.id, workshop.tutorName, workshop.tutorEmail)}
+                          onClick={() => onStartEditTutor(workshop.id, workshop.tutorEmail)}
                         >
                           Change
                         </button>
@@ -262,7 +268,12 @@ export function WorkshopsView() {
                           <button
                             type="button"
                             className="workshop-assign-self-btn"
-                            onClick={() => assignCurrentUserAsTutor(workshop.id)}
+                            onClick={() => {
+                              setWorkshopError(null);
+                              assignCurrentUserAsTutor(workshop.id).catch(() => {
+                                setWorkshopError("Unable to assign the current user as tutor.");
+                              });
+                            }}
                           >
                             Assign Myself as Tutor
                           </button>
@@ -347,7 +358,7 @@ export function WorkshopsView() {
               Delete Workshop?
             </h2>
             <p className="milestone-modal-body">
-              Are you sure you want to delete this workshop? This action removes uploaded students and recorded marks for that workshop.
+              Are you sure you want to delete this workshop? This action removes recorded marks for that workshop.
             </p>
             <div className="milestone-modal-actions">
               <button type="button" className="milestone-modal-btn-primary" onClick={onConfirmDeleteWorkshop}>
@@ -402,25 +413,6 @@ export function WorkshopsView() {
               </label>
 
               <label className="workshop-create-label" style={{ display: "grid", gap: "6px" }}>
-                <span style={{ fontSize: "15px", fontWeight: 600, color: "#33445f" }}>Tutor Name (Optional)</span>
-                <input
-                  value={newWorkshopTutorName}
-                  onChange={(e) => setNewWorkshopTutorName(e.target.value)}
-                  placeholder="e.g., John Smith"
-                  className="workshop-create-field"
-                  style={{
-                    width: "100%",
-                    height: "44px",
-                    border: "1px solid #d3dced",
-                    borderRadius: "10px",
-                    padding: "0 12px",
-                    fontSize: "16px",
-                    color: "#172033",
-                  }}
-                />
-              </label>
-
-              <label className="workshop-create-label" style={{ display: "grid", gap: "6px" }}>
                 <span style={{ fontSize: "15px", fontWeight: 600, color: "#33445f" }}>Tutor Email (Optional)</span>
                 <input
                   value={newWorkshopTutorEmail}
@@ -439,7 +431,7 @@ export function WorkshopsView() {
                 />
               </label>
               <p className="workshop-create-help" style={{ margin: "0", color: "#64758b", fontSize: "13px" }}>
-                If provided, an invitation email will be sent to the tutor.
+                Tutor assignment uses an existing tutor email.
               </p>
             </div>
 
@@ -471,7 +463,6 @@ export function WorkshopsView() {
                 onClick={() => {
                   setShowCreateModal(false);
                   setNewWorkshopName("");
-                  setNewWorkshopTutorName("");
                   setNewWorkshopTutorEmail("");
                 }}
                 style={{

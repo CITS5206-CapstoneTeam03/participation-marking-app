@@ -407,6 +407,17 @@ button {
   display: block;
 }
 
+.review-photo-fallback {
+  border: 1px solid #c7d4ff;
+  background: #eef2ff;
+  color: var(--navy);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .review-student-id {
   font-size: 13px;
   font-family: "SF Mono", "Menlo", monospace;
