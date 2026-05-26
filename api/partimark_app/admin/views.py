@@ -33,16 +33,23 @@ class UserAdmin(ModelView, model=User):
     icon = "fa-solid fa-user"
 
     async def insert_model(self, request: Request, data: dict) -> Any:
+        await self.on_model_change(data, model=None, is_created=True, request=request)
         admin_id = request.session.get("token")
         with SessionLocal() as db:
-            return crud_users.create_user(db, user_data=data, user_id=admin_id)
+            model = crud_users.create_user(db, user_data=data, user_id=admin_id)
+        
+        await self.after_model_change(data, model, is_created=True, request=request)
+        return model
 
     async def update_model(self, request: Request, pk: str, data: dict) -> Any:
         admin_id = request.session.get("token")
         with SessionLocal() as db:
             model = db.get(self.model, pk)
             if model:
-                return crud_users.update_user(db, db_user=model, update_data=data, user_id=admin_id)
+                await self.on_model_change(data, model, is_created=False, request=request)
+                updated_model = crud_users.update_user(db, db_user=model, update_data=data, user_id=admin_id)
+                await self.after_model_change(data, updated_model, is_created=False, request=request)
+                return updated_model
             return None
 
     async def delete_model(self, request: Request, pk: Any) -> None:
