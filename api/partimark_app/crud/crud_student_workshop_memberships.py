@@ -13,6 +13,14 @@ actions = [
     "delete_membership"
 ]
 
+def _resolve_user_id(db: Session, user_id: str) -> str:
+    if user_id in ("ADMIN", "LogicApp"):
+        from ..models.users import User, UserRole
+        admin = db.query(User).filter(User.role == UserRole.ADMIN).first()
+        if admin:
+            return admin.user_id
+    return user_id
+
 def get_membership(db: Session, membership_id: int) -> Optional[StudentWorkshopMembership]:
     """Retrieve a student workshop membership by ID."""
     return (
@@ -89,7 +97,7 @@ def create_membership(
     membership = StudentWorkshopMembership(**membership_data)
 
     audit_in = AuditLogCreate(
-        user_id=user_id,
+        user_id=_resolve_user_id(db, user_id),
         action_type=actions[0],
         description=f"Created membership for student {membership.student_id} in workshop {membership.workshop_id}",
         student_id=membership.student_id,
@@ -111,7 +119,7 @@ def update_membership(
 ) -> StudentWorkshopMembership:
     """Update an existing student workshop membership."""
     audit_in = AuditLogCreate(
-        user_id=user_id,
+        user_id=_resolve_user_id(db, user_id),
         action_type=actions[1],
         description=f"Modified membership for student {db_membership.student_id}",
         student_id=db_membership.student_id,
@@ -135,7 +143,7 @@ def close_current_membership(
 ) -> StudentWorkshopMembership:
     """Mark the current membership as no longer current."""
     audit_in = AuditLogCreate(
-        user_id=user_id,
+        user_id=_resolve_user_id(db, user_id),
         action_type=actions[1],
         description=f"Closed current membership for student {db_membership.student_id}",
         student_id=db_membership.student_id,
@@ -185,7 +193,7 @@ def move_student_to_workshop(
     )
 
     audit_in = AuditLogCreate(
-        user_id=created_by_user_id or "ADMIN",
+        user_id=_resolve_user_id(db, created_by_user_id or "ADMIN"),
         action_type=actions[0],
         description=f"Moved student {student_id} to workshop {target_workshop_id}",
         student_id=student_id,
@@ -202,7 +210,7 @@ def move_student_to_workshop(
 def delete_membership(db: Session, db_membership: StudentWorkshopMembership, user_id: str = "ADMIN") -> None:
     """Delete a student workshop membership."""
     audit_in = AuditLogCreate(
-        user_id=user_id,
+        user_id=_resolve_user_id(db, user_id),
         action_type=actions[2],
         description=f"Deleted membership for student {db_membership.student_id}",
         student_id=db_membership.student_id,

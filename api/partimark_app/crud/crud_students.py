@@ -14,6 +14,14 @@ actions = [
     "delete_student"
 ]
 
+def _resolve_user_id(db: Session, user_id: str) -> str:
+    if user_id in ("ADMIN", "LogicApp"):
+        from ..models.users import User, UserRole
+        admin = db.query(User).filter(User.role == UserRole.ADMIN).first()
+        if admin:
+            return admin.user_id
+    return user_id
+
 def get_student_by_email(db: Session, email: str) -> Optional[Student]:
     """Retrieve a student by their email address."""
     return db.query(Student).filter(Student.email == email).first()
@@ -50,7 +58,7 @@ def create_student(db: Session, student_data: dict, user_id: str = "LogicApp") -
     new_student = Student(**student_data)
 
     audit_in = AuditLogCreate(
-        user_id=user_id,
+        user_id=_resolve_user_id(db, user_id),
         action_type=actions[0],
         description=f"Created student {new_student.student_id}",
         student_id=new_student.student_id
@@ -67,7 +75,7 @@ def create_student(db: Session, student_data: dict, user_id: str = "LogicApp") -
 def update_student(db: Session, db_student: Student, update_data: dict, user_id: str) -> Student:
     """Update an existing student in the database."""
     audit_in = AuditLogCreate(
-        user_id=user_id,
+        user_id=_resolve_user_id(db, user_id),
         action_type=actions[2],
         description=f"Updated student info for {db_student.student_id}",
         student_id=db_student.student_id
@@ -86,7 +94,7 @@ def update_student(db: Session, db_student: Student, update_data: dict, user_id:
 def withdraw_student(db: Session, db_student: Student, user_id: str) -> Student:
     """Mark a student as withdrawn instead of deleting the record."""
     audit_in = AuditLogCreate(
-        user_id=user_id,
+        user_id=_resolve_user_id(db, user_id),
         action_type=actions[1],
         description=f"Withdrew student {db_student.student_id}",
         student_id=db_student.student_id
@@ -103,7 +111,7 @@ def withdraw_student(db: Session, db_student: Student, user_id: str) -> Student:
 def reactivate_student(db: Session, db_student: Student, user_id: str) -> Student:
     """Mark a withdrawn student back to active if needed."""
     audit_in = AuditLogCreate(
-        user_id=user_id,
+        user_id=_resolve_user_id(db, user_id),
         action_type=actions[1],
         description=f"Reactivated student {db_student.student_id}",
         student_id=db_student.student_id
@@ -120,7 +128,7 @@ def reactivate_student(db: Session, db_student: Student, user_id: str) -> Studen
 def delete_student(db: Session, db_student: Student, user_id: str) -> None:
     """Delete a student from the database."""
     audit_in = AuditLogCreate(
-        user_id=user_id,
+        user_id=_resolve_user_id(db, user_id),
         action_type=actions[3],
         description=f"Deleted student {db_student.student_id}",
         student_id=db_student.student_id

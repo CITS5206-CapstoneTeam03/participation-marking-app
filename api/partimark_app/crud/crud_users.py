@@ -14,6 +14,14 @@ actions = [
     "delete_user"
 ]
 
+def _resolve_user_id(db: Session, user_id: str) -> str:
+    if user_id in ("ADMIN", "LogicApp"):
+        from ..models.users import User, UserRole
+        admin = db.query(User).filter(User.role == UserRole.ADMIN).first()
+        if admin:
+            return admin.user_id
+    return user_id
+
 def get_user_by_email(db: Session, email: str) -> Optional[User]:
     """Retrieve a user by their email address."""
     return db.query(User).filter(User.email == email).first()
@@ -45,30 +53,31 @@ def get_users_by_role(
     )
 
 
-# TO DO: Remove the default user_id="UC" and require the authenticated user_id
-# once the public vs admin registration flow is finalized.
 def create_user(db: Session, user_data: dict, user_id: str = "ADMIN") -> User:
     """Create a new user in the database."""
     new_user = User(**user_data)
+    db.add(new_user)
+    db.flush()
 
     audit_in = AuditLogCreate(
-        user_id=user_id,
+        user_id=_resolve_user_id(db, user_id),
         action_type=actions[0],
         description=f"Created user {new_user.email}"
     )
     create_audit_log(db, log_data=audit_in.model_dump())
 
-    db.add(new_user)
     db.commit()
     db.refresh(new_user)
     return new_user
 
 
-
 def update_user(db: Session, db_user: User, update_data: dict, user_id: str = "ADMIN") -> User:
     """Update an existing user in the database."""
+    # If the default ADMIN placeholder is used, fallback to the system admin user
+    # to avoid a foreign key constraint violation on the audit log.
+
     audit_in = AuditLogCreate(
-        user_id=user_id,
+        user_id=_resolve_user_id(db, user_id),
         action_type=actions[1],
         description=f"Modified user {db_user.email}"
     )
@@ -82,11 +91,10 @@ def update_user(db: Session, db_user: User, update_data: dict, user_id: str = "A
     return db_user
 
 
-
 def deactivate_user(db: Session, db_user: User, user_id: str) -> User:
     """Soft-delete/deactivate a user."""
     audit_in = AuditLogCreate(
-        user_id=user_id,
+        user_id=_resolve_user_id(db, user_id),
         action_type=actions[2],
         description=f"Deactivated user {db_user.email}"
     )
@@ -98,11 +106,10 @@ def deactivate_user(db: Session, db_user: User, user_id: str) -> User:
     return db_user
 
 
-
 def delete_user(db: Session, db_user: User, user_id: str) -> None:
     """Delete a user from the database."""
     audit_in = AuditLogCreate(
-        user_id=user_id,
+        user_id=_resolve_user_id(db, user_id),
         action_type=actions[3],
         description=f"Deleted user {db_user.email}"
     )
