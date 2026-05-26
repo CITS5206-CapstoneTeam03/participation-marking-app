@@ -1,6 +1,6 @@
 import logging
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, InternalError, OperationalError
 from partimark_app.core.config import settings
 from partimark_app.crud import crud_users
 from partimark_app.schemas.users import UserCreate
@@ -33,8 +33,8 @@ def init_db(db: Session) -> None:
             try:
                 crud_users.create_user(db, user_data=user_data)
                 logger.info(f"Admin user {settings.initial_admin_email} successfully bootstrapped.")
-            except IntegrityError:
+            except (IntegrityError, InternalError, OperationalError) as e:
                 db.rollback()
-                logger.warning(f"Admin user {settings.initial_admin_email} was created by another worker. Skipping.")
+                logger.warning(f"Admin user {settings.initial_admin_email} was created by another worker or encountered a lock ({type(e).__name__}). Skipping.")
         else:
             logger.info(f"Admin user {settings.initial_admin_email} already exists. Skipping bootstrap.")
