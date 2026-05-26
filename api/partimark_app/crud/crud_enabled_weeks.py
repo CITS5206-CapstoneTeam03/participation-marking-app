@@ -83,15 +83,23 @@ def replace_enabled_weeks(db: Session, week_numbers: List[int], user_id: str) ->
     )
     create_audit_log(db, log_data=audit_in.model_dump())
 
-    db.query(EnabledWeek).delete()
+    current_weeks = db.query(EnabledWeek).all()
+    current_week_numbers = {w.week_number for w in current_weeks}
+    target_week_numbers = set(week_numbers)
+
+    # Delete weeks that are in the database but not in the new set
+    weeks_to_delete = [w for w in current_weeks if w.week_number not in target_week_numbers]
+    for w in weeks_to_delete:
+        db.delete(w)
+
+    # Insert weeks that are in the new set but not in the database
+    weeks_to_add = target_week_numbers - current_week_numbers
+    new_weeks = [EnabledWeek(week_number=wn) for wn in sorted(weeks_to_add)]
+    db.add_all(new_weeks)
     db.commit()
 
-    enabled_weeks = [EnabledWeek(week_number=week_number) for week_number in sorted(set(week_numbers))]
-    db.add_all(enabled_weeks)
-    db.commit()
-
-    for week in enabled_weeks:
-        db.refresh(week)
+    # Retrieve and return the updated, sorted list of enabled weeks from the database
+    enabled_weeks = db.query(EnabledWeek).filter(EnabledWeek.week_number.in_(target_week_numbers)).order_by(EnabledWeek.week_number.asc()).all()
 
     _sync_system_config_points(db, user_id)
     return enabled_weeks

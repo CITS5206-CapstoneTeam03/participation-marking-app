@@ -23,6 +23,7 @@ from partimark_app.crud import (
     crud_workshops,
     crud_student_workshop_memberships,
 )
+from partimark_app.services.email.mark_publish import draft_and_send_emails
 
 logger = logging.getLogger(__name__)
 
@@ -220,7 +221,16 @@ class UserAdmin(ModelView, model=User):
 
 class StudentAdmin(ModelView, model=Student):
     # If column_list is not specified, SQLAdmin automatically displays all columns
+    column_list = [Student.student_id,Student.created_at]
     icon = "fa-solid fa-graduation-cap"
+
+    form_excluded_columns = [
+        "created_at",
+        "updated_at",
+        "participation_marks",
+        "workshop_memberships",
+        "audit_logs",
+    ]
 
     async def insert_model(self, request: Request, data: dict) -> Any:
         admin_id = request.session.get("token")
@@ -243,14 +253,29 @@ class StudentAdmin(ModelView, model=Student):
                 crud_students.delete_student(db, db_student=model, user_id=admin_id)
 
 class WorkshopAdmin(ModelView, model=Workshop):
+    column_list = [Workshop.workshop_name, Workshop.tutor, "tutor_email", "tutor_name", Workshop.tutor_user_id]
     icon = "fa-solid fa-chalkboard-user"
 
+    form_excluded_columns = [
+        "created_at",
+        "updated_at",
+        "participation_marks",
+        "student_memberships",
+        "audit_logs",
+    ]
+
+    def _normalize_data(self, data: dict) -> None:
+        if "tutor" in data:
+            data["tutor_user_id"] = data.pop("tutor")
+
     async def insert_model(self, request: Request, data: dict) -> Any:
+        self._normalize_data(data)
         admin_id = request.session.get("token")
         with SessionLocal() as db:
             return crud_workshops.create_workshop(db, workshop_data=data, user_id=admin_id)
 
     async def update_model(self, request: Request, pk: str, data: dict) -> Any:
+        self._normalize_data(data)
         admin_id = request.session.get("token")
         with SessionLocal() as db:
             model = db.get(self.model, pk)
@@ -266,28 +291,40 @@ class WorkshopAdmin(ModelView, model=Workshop):
                 crud_workshops.delete_workshop(db, db_workshop=model, user_id=admin_id)
 
 class EnabledWeekAdmin(ModelView, model=EnabledWeek):
+    column_list = [EnabledWeek.week_number, EnabledWeek.created_at]
     icon = "fa-solid fa-calendar-check"
     can_create = False
     can_edit = False
     can_delete = False
 
 class SystemConfigAdmin(ModelView, model=SystemConfig):
+    column_list = [SystemConfig.coordinator_user, SystemConfig.week12_lock_enabled, SystemConfig.week6_lock_enabled, SystemConfig.total_participation_points]
     icon = "fa-solid fa-gear"
     can_create = False
     can_edit = False
     can_delete = False
-
 class StudentWorkshopMembershipAdmin(ModelView, model=StudentWorkshopMembership):
+    column_list = [StudentWorkshopMembership.workshop_id, StudentWorkshopMembership.student_id, StudentWorkshopMembership.created_by_user_id, StudentWorkshopMembership.student, StudentWorkshopMembership.workshop]
     name = "Workshop Membership"
     name_plural = "Workshop Memberships"
     icon = "fa-solid fa-users"
 
+    def _normalize_data(self, data: dict) -> None:
+        if "student" in data:
+            data["student_id"] = data.pop("student")
+        if "workshop" in data:
+            data["workshop_id"] = data.pop("workshop")
+        if "created_by_user" in data:
+            data["created_by_user_id"] = data.pop("created_by_user")
+
     async def insert_model(self, request: Request, data: dict) -> Any:
+        self._normalize_data(data)
         admin_id = request.session.get("token")
         with SessionLocal() as db:
             return crud_student_workshop_memberships.create_membership(db, membership_data=data, user_id=admin_id)
 
     async def update_model(self, request: Request, pk: str, data: dict) -> Any:
+        self._normalize_data(data)
         admin_id = request.session.get("token")
         with SessionLocal() as db:
             model = db.get(self.model, pk)
@@ -306,13 +343,51 @@ class ParticipationMarkAdmin(ModelView, model=ParticipationMark):
     name = "Participation Mark"
     name_plural = "Participation Marks"
     icon = "fa-solid fa-check-double"
+    column_list = [ParticipationMark.student_id, ParticipationMark.score, ParticipationMark.marked_by_user_id, ParticipationMark.marked_at, ParticipationMark.updated_at, ParticipationMark.enabled_week]
     
+    @action(
+        name="publish_half_sem",
+        label="Publish Mid-Semester Marks",
+        confirmation_message="Are you sure you want to publish Mid-Semester marks to all students?",
+        add_in_detail=True,
+        add_in_list=True,
+    )
+    async def publish_half_sem_action(self, request: Request):
+        db = SessionLocal()
+        try:
+            sent_count = draft_and_send_emails(db=db, final=False)
+            logger.info(f"publish_half_sem_action: Successfully sent {sent_count} mid-semester emails.")
+        except Exception as e:
+            logger.error(f"publish_half_sem_action failed: {e}")
+        finally:
+            db.close()
+        return RedirectResponse(request.url_for("admin:list", identity="participation-mark"), status_code=302)
+
+    @action(
+        name="publish_last_sem",
+        label="Publish Final Semester Marks",
+        confirmation_message="Are you sure you want to publish Final Semester marks to all students?",
+        add_in_detail=True,
+        add_in_list=True,
+    )
+    async def publish_last_sem_action(self, request: Request):
+        db = SessionLocal()
+        try:
+            sent_count = draft_and_send_emails(db=db, final=True)
+            logger.info(f"publish_last_sem_action: Successfully sent {sent_count} final semester emails.")
+        except Exception as e:
+            logger.error(f"publish_last_sem_action failed: {e}")
+        finally:
+            db.close()
+        return RedirectResponse(request.url_for("admin:list", identity="participation-mark"), status_code=302)
+
     # Restrict permissions: Read-only access for admins
     can_create = False
     can_edit = False
     can_delete = False
 
 class AuditLogAdmin(ModelView, model=AuditLog):
+    column_list = [AuditLog.action_type, AuditLog.user_id, AuditLog.created_at, AuditLog.description]
     icon = "fa-solid fa-clipboard-list"
 
     # Restrict permissions: Read-only access for admins

@@ -17,7 +17,10 @@ router = APIRouter()
 
 
 @router.get("/current", response_model=SystemConfigResponse)
-def get_current_system_config(db: Session = Depends(get_db)):
+def get_current_system_config(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     db_config = crud.get_current_system_config(db)
     if not db_config:
         raise HTTPException(
@@ -32,7 +35,8 @@ def get_current_system_config(db: Session = Depends(get_db)):
         db_config = crud.update_system_config(
             db, 
             db_config=db_config, 
-            update_data={"total_participation_points": total_points}
+            update_data={"total_participation_points": total_points},
+            user_id=current_user.user_id,
         )
 
     return db_config
