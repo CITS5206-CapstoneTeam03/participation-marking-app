@@ -1,9 +1,10 @@
 "use client";
 
-import { type ChangeEvent, useMemo, useState } from "react";
+import { type ChangeEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { read, utils } from "xlsx";
 import { useAppContext, type WorkshopStudent } from "../context/app-context";
+import { getMarksByWorkshopAndWeek, type MarkDto } from "../lib/services/marks";
 
 function parseStudentsCsv(text: string): WorkshopStudent[] {
   const lines = text
@@ -42,7 +43,6 @@ export function WorkshopsView() {
     assignCurrentUserAsTutor,
     upsertWorkshopStudentsFromCsv,
     currentUserName,
-    sessionMarks,
     configWeeks,
   } = useAppContext();
 
@@ -54,34 +54,59 @@ export function WorkshopsView() {
   const [confirmDeleteWorkshopId, setConfirmDeleteWorkshopId] = useState<string | null>(null);
   const [workshopError, setWorkshopError] = useState<string | null>(null);
 
-  const enabledWeekIds = useMemo(
-    () => new Set(configWeeks.filter((week) => week.enabled).map((week) => week.id)),
+  const enabledWeeks = useMemo(
+    () => configWeeks.filter((week) => week.enabled),
     [configWeeks],
   );
 
+  const [marksByWorkshopWeek, setMarksByWorkshopWeek] = useState<Record<string, Record<number, MarkDto[]>>>({});
+
+  useEffect(() => {
+    if (workshops.length === 0 || enabledWeeks.length === 0) return;
+    let isCurrent = true;
+
+    Promise.all(
+      workshops.map(async (workshop) => {
+        const weekResults = await Promise.allSettled(
+          enabledWeeks.map(async (week) => {
+            const marks = await getMarksByWorkshopAndWeek(workshop.id, week.weekNumber);
+            return [week.weekNumber, marks] as const;
+          }),
+        );
+        const weekEntries = weekResults.flatMap((result) =>
+          result.status === "fulfilled" ? [result.value] : [],
+        );
+        return [workshop.id, Object.fromEntries(weekEntries)] as const;
+      }),
+    ).then((entries) => {
+      if (!isCurrent) return;
+      setMarksByWorkshopWeek(Object.fromEntries(entries));
+    });
+
+    return () => { isCurrent = false; };
+  }, [workshops, enabledWeeks]);
+
   const workshopStats = useMemo(() => {
-    const enabledWeekIdList = [...enabledWeekIds];
     return workshops.map((workshop) => {
       const students = workshopStudents[workshop.id] ?? [];
       const studentCount = students.length;
       const studentIds = new Set(students.map((student) => student.studentId));
 
-      const weeksCompleted = enabledWeekIdList.filter((weekId) => {
+      const weeksCompleted = enabledWeeks.filter((week) => {
         if (studentCount === 0) return false;
-        const weekMarks = sessionMarks[weekId] ?? {};
-        const markedStudents = Object.keys(weekMarks).filter((studentId) => studentIds.has(studentId));
-        return markedStudents.length >= studentCount;
+        const weekMarks = (marksByWorkshopWeek[workshop.id]?.[week.weekNumber] ?? [])
+          .filter((mark) => studentIds.has(mark.student_id));
+        return weekMarks.length >= studentCount;
       }).length;
 
-      const markEntries = enabledWeekIdList.flatMap((weekId) => {
-        const weekMarks = sessionMarks[weekId] ?? {};
-        return Object.entries(weekMarks)
-          .filter(([studentId]) => studentIds.has(studentId))
-          .map(([, score]) => score);
-      });
+      const markEntries = enabledWeeks.flatMap((week) =>
+        (marksByWorkshopWeek[workshop.id]?.[week.weekNumber] ?? [])
+          .filter((mark) => studentIds.has(mark.student_id))
+          .map((mark) => mark.score),
+      );
       const totalMarksRecorded = markEntries.length;
 
-      const totalPossibleMarks = studentCount * enabledWeekIdList.length;
+      const totalPossibleMarks = studentCount * enabledWeeks.length;
       const progress = totalPossibleMarks > 0 ? (totalMarksRecorded / totalPossibleMarks) * 100 : 0;
 
       const avgScore = totalMarksRecorded > 0
@@ -92,12 +117,12 @@ export function WorkshopsView() {
         workshop,
         studentCount,
         weeksCompleted,
-        totalWeeks: enabledWeekIdList.length,
+        totalWeeks: enabledWeeks.length,
         progress,
         avgScore,
       };
     });
-  }, [workshops, workshopStudents, sessionMarks, enabledWeekIds]);
+  }, [workshops, workshopStudents, marksByWorkshopWeek, enabledWeeks]);
 
   const onCreateWorkshop = async () => {
     if (!newWorkshopName.trim()) return;
